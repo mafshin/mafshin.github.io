@@ -2,12 +2,12 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
 <url>
     <loc>https://mafshin.com/</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>1</priority>
     </url>,<url>
     <loc>https://mafshin.com/blog</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
     </url>,<url>
@@ -17,7 +17,7 @@
     <priority>0.5</priority>
     </url>,<url>
     <loc>https://mafshin.com/tutorials</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>monthly</changefreq>
     <priority>0.7</priority>
     </url>,<url>
@@ -27,27 +27,27 @@
     <priority>0.8</priority>
     </url>,<url>
     <loc>https://mafshin.com/tag/github-pages</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
     </url>,<url>
     <loc>https://mafshin.com/tag/free-website</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
     </url>,<url>
     <loc>https://mafshin.com/tag/svelte</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
     </url>,<url>
     <loc>https://mafshin.com/tag/sapper</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
     </url>,<url>
     <loc>https://mafshin.com/tag/free-hosting</loc>
-    <lastmod>2021-02-27</lastmod>
+    <lastmod>2021-02-28</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.6</priority>
     </url>
