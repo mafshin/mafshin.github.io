@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Project Explorer</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+    
+    .folder-card {
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .folder-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+    }
+    
+    .file-item {
+      transition: background-color 0.2s ease;
+    }
+    
+    .file-item:hover {
+      background-color: #f1f5f9;
+    }
+  </style>
+</head>
+<body>
+  <div class="min-h-screen pb-12">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
+      <div class="container mx-auto py-6 px-4">
+        <h1 class="text-3xl font-bold text-center">Project Explorer</h1>
+        <p class="text-center mt-2 text-blue-100">Browse your web projects</p>
+      </div>
+    </header>
+    
+    <!-- Content -->
+    <div class="container mx-auto px-4 mt-8">
+      <!-- Folders Grid -->
+      <div id="folders-container">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">Projects</h2>
+        <div id="folders-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const foldersGrid = document.getElementById('folders-grid');
+      
+      // UPDATE THIS ARRAY MANUALLY WITH YOUR FOLDER STRUCTURE
+      // Format: 
+      // { 
+      //   name: "folder-name", 
+      //   files: [
+      //     { name: "file-name.html", path: "./path/to/file.html" }
+      //   ]
+      // }
+      const folderStructure = [
+        {
+          name: "AI Experiments",
+          files: [
+            { name: "github-profile.html", path: "./ai-experiments/github-profile.html" }
+          ]
+        }
+      ];
+      
+      // Function to render folders and their files
+      function renderFolders(folders) {
+        foldersGrid.innerHTML = '';
+        
+        folders.forEach(folder => {
+          const folderCard = document.createElement('div');
+          folderCard.className = 'bg-white rounded-lg shadow-md overflow-hidden folder-card';
+          
+          const folderHeader = document.createElement('div');
+          folderHeader.className = 'bg-indigo-600 p-4';
+          folderHeader.innerHTML = `
+            <div class="flex items-center">
+              <svg class="w-6 h-6 text-white mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.5a1.5 1.5 0 01-3 0V6z" clip-rule="evenodd" />
+                <path d="M6 12a2 2 0 012-2h8a2 2 0 012 2v2a2 2 0 01-2 2H2h2a2 2 0 002-2v-2z" />
+              </svg>
+              <h3 class="text-lg font-semibold text-white capitalize">${folder.name.replace(/-/g, ' ')}</h3>
+            </div>
+            <div class="text-blue-100 text-sm mt-1">
+              ${folder.files.length} HTML ${folder.files.length === 1 ? 'file' : 'files'}
+            </div>
+          `;
+          
+          const filesList = document.createElement('div');
+          filesList.className = 'divide-y';
+          
+          if (folder.files && folder.files.length > 0) {
+            folder.files.forEach(file => {
+              const fileItem = document.createElement('div');
+              fileItem.className = 'p-4 file-item';
+              fileItem.innerHTML = `
+                <a href="${file.path}" target="_blank" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
+                  </svg>
+                  ${file.name}
+                </a>
+              `;
+              filesList.appendChild(fileItem);
+            });
+          } else {
+            const emptyMessage = document.createElement('div');
+            emptyMessage.className = 'p-4 text-gray-500 text-center';
+            emptyMessage.textContent = 'No HTML files found';
+            filesList.appendChild(emptyMessage);
+          }
+          
+          folderCard.appendChild(folderHeader);
+          folderCard.appendChild(filesList);
+          foldersGrid.appendChild(folderCard);
+        });
+      }
+      
+      // Render the folder structure
+      renderFolders(folderStructure);
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GitHub Resume</title>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.4/moment.min.js"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+    body {
+      font-family: 'Inter', sans-serif;
+      background-color: #f8fafc;
+    }
+    .loading { animation: pulse 1.5s infinite; }
+    @keyframes pulse {
+      0%, 100% { opacity: 0.5; }
+      50% { opacity: 0.8; }
+    }
+    .timeline-item:not(:last-child):after {
+      content: '';
+      position: absolute;
+      left: 20px;
+      top: 30px;
+      height: calc(100% - 20px);
+      width: 2px;
+      background-color: #cbd5e1;
+    }
+  </style>
+</head>
+<body>
+  <div id="app" class="min-h-screen pb-16">
+    <!-- Header -->
+    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
+      <div class="container mx-auto py-6 px-4">
+        <h1 class="text-3xl font-bold text-center">GitHub Resume</h1>
+      </div>
+    </header>
+
+    <!-- Search Form -->
+    <div class="container mx-auto mt-8 px-4">
+      <form id="search-form" class="max-w-2xl mx-auto">
+        <div class="flex shadow-md rounded-lg overflow-hidden">
+          <input
+            type="text"
+            id="username-input"
+            placeholder="Enter GitHub username"
+            class="flex-grow p-4 focus:outline-none"
+            required
+          />
+          <button
+            type="submit"
+            class="bg-indigo-600 text-white px-6 py-4 font-medium hover:bg-indigo-700 transition-colors"
+          >
+            Generate Resume
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading" class="container mx-auto mt-12 px-4 flex justify-center hidden">
+      <div class="bg-white rounded-lg shadow-md p-8 loading max-w-4xl w-full">
+        <div class="h-8 bg-gray-200 rounded mb-4"></div>
+        <div class="h-32 bg-gray-200 rounded mb-4"></div>
+        <div class="h-12 bg-gray-200 rounded mb-4"></div>
+        <div class="h-64 bg-gray-200 rounded"></div>
+      </div>
+    </div>
+
+    <!-- Error Message -->
+    <div id="error" class="container mx-auto mt-8 px-4 hidden">
+      <div class="bg-red-50 border-l-4 border-red-500 p-4 max-w-2xl mx-auto">
+        <div class="flex">
+          <div class="flex-shrink-0">
+            <svg class="h-5 w-5 text-red-500" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 001.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+            </svg>
+          </div>
+          <div class="ml-3">
+            <p id="error-message" class="text-sm text-red-700"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Resume Content -->
+    <div id="resume" class="container mx-auto my-8 px-4 hidden">
+      <!-- Profile Section -->
+      <div id="profile-section" class="bg-white rounded-lg shadow-md p-8 mb-6"></div>
+
+      <!-- Repositories Section -->
+      <div class="bg-white rounded-lg shadow-md p-8 mb-6">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Repositories</h3>
+        <div id="repos-list" class="divide-y"></div>
+      </div>
+
+      <!-- Commit Timeline -->
+      <div class="bg-white rounded-lg shadow-md p-8">
+        <h3 class="text-xl font-bold text-gray-800 mb-4">Recent Activity</h3>
+        <div id="commit-timeline" class="space-y-4"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const searchForm = document.getElementById('search-form');
+      const usernameInput = document.getElementById('username-input');
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const errorMessage = document.getElementById('error-message');
+      const resume = document.getElementById('resume');
+      const profileSection = document.getElementById('profile-section');
+      const reposList = document.getElementById('repos-list');
+      const commitTimeline = document.getElementById('commit-timeline');
+
+      searchForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const username = usernameInput.value.trim();
+        if (!username) return;
+
+        // Reset and show loading
+        error.classList.add('hidden');
+        resume.classList.add('hidden');
+        loading.classList.remove('hidden');
+        profileSection.innerHTML = '';
+        reposList.innerHTML = '';
+        commitTimeline.innerHTML = '';
+
+        try {
+          // Fetch user data
+          const userResponse = await fetch(`https://api.github.com/users/${username}`);
+          if (!userResponse.ok) {
+            throw new Error(userResponse.status === 404 
+              ? 'User not found' 
+              : 'GitHub API rate limit exceeded. Try again later.');
+          }
+          const userData = await userResponse.json();
+
+          // Fetch repositories
+          const reposResponse = await fetch(`https://api.github.com/users/${username}/repos?per_page=100&sort=updated`);
+          const reposData = await reposResponse.json();
+
+          // Fetch events (for commits)
+          const eventsResponse = await fetch(`https://api.github.com/users/${username}/events?per_page=30`);
+          const eventsData = await eventsResponse.json();
+          
+          // Extract commit data from push events
+          const commitEvents = eventsData
+            .filter(event => event.type === 'PushEvent')
+            .map(event => {
+              return event.payload.commits.map(commit => ({
+                sha: commit.sha,
+                message: commit.message,
+                repo: event.repo.name,
+                date: event.created_at
+              }));
+            })
+            .flat()
+            .slice(0, 10); // Limit to 10 commits
+
+          // Render the data
+          renderProfile(userData);
+          renderRepositories(reposData);
+          renderCommitTimeline(commitEvents);
+
+          // Show the resume
+          loading.classList.add('hidden');
+          resume.classList.remove('hidden');
+        } catch (err) {
+          loading.classList.add('hidden');
+          error.classList.remove('hidden');
+          errorMessage.textContent = err.message;
+        }
+      });
+
+      function renderProfile(user) {
+        const accountCreated = moment(user.created_at).format('MMMM YYYY');
+        const yearsSinceCreation = moment().diff(moment(user.created_at), 'years', true).toFixed(1);
+        
+        profileSection.innerHTML = `
+          <div class="flex flex-col md:flex-row items-center md:items-start">
+            <img
+              src="${user.avatar_url}"
+              alt="${user.login}'s avatar"
+              class="w-32 h-32 rounded-full border-4 border-indigo-100"
+            />
+            <div class="md:ml-8 mt-4 md:mt-0 text-center md:text-left">
+              <h2 class="text-3xl font-bold text-gray-800">
+                ${user.name || user.login}
+              </h2>
+              <p class="text-xl text-gray-600 mt-1">@${user.login}</p>
+              
+              <div class="mt-4 flex flex-wrap justify-center md:justify-start gap-4">
+                ${user.email ? `
+                <a href="mailto:${user.email}" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                    <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+                  </svg>
+                  ${user.email}
+                </a>
+                ` : ''}
+                ${user.blog ? `
+                <a href="${user.blog.startsWith('http') ? user.blog : `https://${user.blog}`}" target="_blank" rel="noopener noreferrer" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M12.586 4.586a2 2 0 112.828 2.828l-3 3a2 2 0 01-2.828 0 1 1 0 00-1.414 1.414 4 4 0 005.656 0l3-3a4 4 0 00-5.656-5.656l-1.5 1.5a1 1 0 101.414 1.414l1.5-1.5zm-5 5a2 2 0 012.828 0 1 1 0 101.414-1.414 4 4 0 00-5.656 0l-3 3a4 4 0 105.656 5.656l1.5-1.5a1 1 0 10-1.414-1.414l-1.5 1.5a2 2 0 11-2.828-2.828l3-3z" clip-rule="evenodd" />
+                  </svg>
+                  Website
+                </a>
+                ` : ''}
+                <a href="${user.html_url}" target="_blank" rel="noopener noreferrer" class="flex items-center text-indigo-600 hover:text-indigo-800">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 0C4.477 0 0 4.484 0 10.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0110 4.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.203 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.942.359.31.678.921.678 1.856 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0020 10.017C20 4.484 15.522 0 10 0z" clip-rule="evenodd" />
+                  </svg>
+                  GitHub Profile
+                </a>
+                ${user.location ? `
+                <div class="flex items-center text-gray-600">
+                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd" />
+                  </svg>
+                  ${user.location}
+                </div>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+
+          ${user.bio ? `
+          <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+            <h3 class="text-lg font-semibold text-gray-700 mb-2">About</h3>
+            <p class="text-gray-700">${user.bio}</p>
+          </div>
+          ` : ''}
+
+          <div class="mt-6 grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+            <div class="bg-blue-50 p-3 rounded-lg">
+              <p class="text-2xl font-bold text-blue-600">${user.public_repos}</p>
+              <p class="text-sm text-gray-600">Repositories</p>
+            </div>
+            <div class="bg-purple-50 p-3 rounded-lg">
+              <p class="text-2xl font-bold text-purple-600">${user.followers}</p>
+              <p class="text-sm text-gray-600">Followers</p>
+            </div>
+            <div class="bg-green-50 p-3 rounded-lg">
+              <p class="text-2xl font-bold text-green-600">${user.following}</p>
+              <p class="text-sm text-gray-600">Following</p>
+            </div>
+            <div class="bg-yellow-50 p-3 rounded-lg">
+              <p class="text-2xl font-bold text-yellow-600">${user.public_gists || 0}</p>
+              <p class="text-sm text-gray-600">Gists</p>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderRepositories(repos) {
+        if (repos.length === 0) {
+          reposList.innerHTML = '<p class="text-gray-500 py-4">No repositories found</p>';
+          return;
+        }
+
+        reposList.innerHTML = repos.map(repo => `
+          <div class="py-4">
+            <div class="flex justify-between items-start">
+              <a href="${repo.html_url}" target="_blank" rel="noopener noreferrer" 
+                 class="text-lg font-medium text-indigo-600 hover:text-indigo-800 transition-colors">
+                ${repo.name}
+              </a>
+              <div class="flex items-center text-gray-600 text-sm">
+                <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118l-2.8-2.034c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                </svg>
+                ${repo.stargazers_count}
+              </div>
+            </div>
+            ${repo.description ? `<p class="text-gray-600 text-sm mt-1">${repo.description}</p>` : ''}
+            <div class="mt-2 flex justify-between items-center">
+              <div class="flex items-center text-gray-500 text-sm">
+                ${repo.language ? `
+                <span class="w-3 h-3 rounded-full mr-1" style="background-color: ${getLanguageColor(repo.language)}"></span>
+                ${repo.language}
+                ` : ''}
+              </div>
+              <div class="text-gray-500 text-sm">
+                Updated ${moment(repo.updated_at).fromNow()}
+              </div>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      function renderCommitTimeline(commits) {
+        if (commits.length === 0) {
+          commitTimeline.innerHTML = '<p class="text-gray-500 py-4">No recent activity found</p>';
+          return;
+        }
+
+        commitTimeline.innerHTML = commits.map(commit => `
+          <div class="relative pl-8 border-b pb-3 last:border-b-0 timeline-item">
+            <div class="absolute left-0 top-1.5 w-5 h-5 bg-indigo-100 border-2 border-indigo-500 rounded-full z-10"></div>
+            <p class="text-sm text-gray-500">${moment(commit.date).fromNow()}</p>
+            <p class="text-gray-800 mt-1">${commit.message.split('\n')[0]}</p>
+            <p class="text-sm text-indigo-600 mt-1">${commit.repo}</p>
+          </div>
+        `).join('');
+      }
+
+      function getLanguageColor(language) {
+        const colors = {
+          "JavaScript": "#f1e05a",
+          "TypeScript": "#3178c6",
+          "Python": "#3572A5",
+          "Java": "#b07219",
+          "C#": "#178600",
+          "PHP": "#4F5D95",
+          "C++": "#f34b7d",
+          "CSS": "#563d7c",
+          "Ruby": "#701516",
+          "Go": "#00ADD8",
+          "Swift": "#F05138",
+          "Kotlin": "#A97BFF",
+          "Rust": "#dea584",
+          "HTML": "#e34c26",
+          "Shell": "#89e051"
+        };
+        return colors[language] || "#858585";
+      }
+    });
+  </script>
+</body>
+</html>
