@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>React Component</title>
+  <!-- Include React and ReactDOM from CDN -->
+  <script src="https://unpkg.com/react@17/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js" crossorigin></script>
+  <!-- Include Babel for JSX transformation -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js" crossorigin></script>
+  <!-- Include your React component -->
+  <script type="text/babel" src="./component.js"></script>
+</head>
+<body>
+  <!-- Container for the React component -->
+  <div id="root"></div>
+
+  <!-- Render the React component -->
+  <script type="text/babel">
+    ReactDOM.render(<Component />, document.getElementById('root'));
+  </script>
+</body>
+</html>
