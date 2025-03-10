@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Clock, User, Home, Settings, BarChart2, Edit, Plus, X, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import _ from 'lodash';
 
+
 // Main App Component
-const Component = () => {
+export default function Component() {
   // State definitions
   const [activeTab, setActiveTab] = useState('dashboard');
   const [db, setDb] = useState(null);
@@ -1512,5 +1513,3 @@ const Component = () => {
     </div>
   );
 };
-
-export default Component;
