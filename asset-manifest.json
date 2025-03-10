@@ -1,0 +1,16 @@
+{
+  "files": {
+    "main.css": "/ai-experiments/time-tracker/static/css/main.f855e6bc.css",
+    "main.js": "/ai-experiments/time-tracker/static/js/main.5f8d0499.js",
+    "static/js/453.51cac1ab.chunk.js": "/ai-experiments/time-tracker/static/js/453.51cac1ab.chunk.js",
+    "static/media/logo.svg": "/ai-experiments/time-tracker/static/media/logo.6ce24c58023cc2f8fd88fe9d219db6c6.svg",
+    "index.html": "/ai-experiments/time-tracker/index.html",
+    "main.f855e6bc.css.map": "/ai-experiments/time-tracker/static/css/main.f855e6bc.css.map",
+    "main.5f8d0499.js.map": "/ai-experiments/time-tracker/static/js/main.5f8d0499.js.map",
+    "453.51cac1ab.chunk.js.map": "/ai-experiments/time-tracker/static/js/453.51cac1ab.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.f855e6bc.css",
+    "static/js/main.5f8d0499.js"
+  ]
+}
