@@ -1060,11 +1060,30 @@
                 };
                 
                 // Update browser URL
-                const updateURL = (path, title) => {
-                    const basePath = getBasePath();
-                    const fullPath = basePath + path;
+                const updateURL = (params, title) => {
+                    // Create URL object from current location
+                    const url = new URL(window.location.href);
                     
-                    window.history.pushState({}, title, fullPath);
+                    // Clear existing query parameters
+                    url.search = '';
+                    
+                    // Create new URLSearchParams object
+                    const searchParams = new URLSearchParams();
+                    
+                    // Add new query parameters
+                    if (params && typeof params === 'object') {
+                        Object.entries(params).forEach(([key, value]) => {
+                            if (value !== null && value !== undefined) {
+                                searchParams.set(key, value.toString());
+                            }
+                        });
+                    }
+                    
+                    // Set the search part of the URL
+                    url.search = searchParams.toString();
+                    
+                    // Update browser history and title
+                    window.history.pushState({}, title, url.toString());
                     document.title = title ? `${title} - BookNook` : 'BookNook - Your Personal Book Discovery Tool';
                 };
                 
