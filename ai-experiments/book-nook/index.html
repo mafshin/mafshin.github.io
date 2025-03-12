@@ -69,6 +69,7 @@
             gap: 10px;
             font-size: 1.5rem;
             font-weight: bold;
+            cursor: pointer;
         }
 
         .logo i {
@@ -667,6 +668,31 @@
                 max-width: none;
                 margin: 0;
             }
+
+            /* Footer styles */
+        .app-footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 2rem;
+            width: 100%;
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            position: 0 0;
+            display: absolute;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .version {
+            font-weight: bold;
+            color: var(--accent-color);
+        }
         }
     </style>
 </head>
@@ -910,6 +936,13 @@
                     </div>
                 </div>
             </main>
+            
+            <!-- <footer class="app-footer">
+                <div class="footer-content">
+                    <p>BookNook - Your Personal Book Discovery Tool</p>
+                    <p class="version">v1.3</p>
+                </div>
+            </footer> -->
         </div>
 
         <!-- Create List Modal -->
@@ -995,17 +1028,43 @@
                 const selectedList = ref(null);
                 const selectedListsToAdd = ref([]);
                 
+                // Get base URL path
+                const getBasePath = () => {
+                    // Get the path from the current window location
+                    const path = window.location.pathname;
+                    
+                    // Detect the subfolder by looking for the last segment before any app routes
+                    const appRoutes = ['/book/', '/search', '/category/', '/library'];
+                    
+                    // Find the subfolder part of the path
+                    for (const route of appRoutes) {
+                        const routeIndex = path.indexOf(route);
+                        if (routeIndex > 0) {
+                            return path.substring(0, routeIndex);
+                        }
+                    }
+                    
+                    // If we can't detect a subfolder explicitly, attempt to get it from the page path
+                    // by removing any known route patterns
+                    const pathWithoutRoutes = path.replace(/\/(book|search|category|library)\/.*$/, '');
+                    
+                    // Return the path up to the last slash, or empty string if at root
+                    const lastSlashIndex = pathWithoutRoutes.lastIndexOf('/');
+                    return lastSlashIndex >= 0 ? pathWithoutRoutes.substring(0, lastSlashIndex + 1) : '';
+                };
+                
                 // Route handling
                 const parseRoute = () => {
-                    const path = window.location.pathname;
+                    const basePath = getBasePath();
+                    const path = window.location.pathname.replace(basePath, '');
                     const searchParams = new URLSearchParams(window.location.search);
                     
-                    if (path.startsWith('/book/')) {
+                    if (path.includes('/book/')) {
                         // Book detail route
                         const identifier = path.split('/book/')[1];
                         loadBookByIdentifier(identifier);
                         return;
-                    } else if (path.startsWith('/search')) {
+                    } else if (path.includes('/search')) {
                         // Search route
                         const query = searchParams.get('q');
                         if (query) {
@@ -1013,13 +1072,13 @@
                             searchBooks();
                             return;
                         }
-                    } else if (path.startsWith('/category/')) {
+                    } else if (path.includes('/category/')) {
                         // Category route
                         const category = path.split('/category/')[1];
                         selectedCategory.value = category;
                         searchBooksByCategory(category);
                         return;
-                    } else if (path.startsWith('/library')) {
+                    } else if (path.includes('/library')) {
                         // Library route
                         currentView.value = 'library';
                         return;
@@ -1031,7 +1090,10 @@
                 
                 // Update browser URL
                 const updateURL = (path, title) => {
-                    window.history.pushState({}, title, path);
+                    const basePath = getBasePath();
+                    const fullPath = basePath + path;
+                    
+                    window.history.pushState({}, title, fullPath);
                     document.title = title ? `${title} - BookNook` : 'BookNook - Your Personal Book Discovery Tool';
                 };
                 
