@@ -1023,35 +1023,34 @@
                 
                 // Route handling
                 const parseRoute = () => {
-                    const path = window.location.pathname;
                     const searchParams = new URLSearchParams(window.location.search);
+                    const view = searchParams.get('view');
                     
-                    // Check for book detail route
-                    if (path.includes('/book/')) {
-                        const parts = path.split('/book/');
-                        const identifier = parts[1].replace(/\/index\.html$/, '');
-                        loadBookByIdentifier(identifier);
+                    if (view === 'book') {
+                        // Book detail route
+                        const identifier = searchParams.get('id');
+                        if (identifier) {
+                            loadBookByIdentifier(identifier);
+                        }
                         return;
-                    } 
-                    // Check for search route
-                    else if (path.includes('/search')) {
+                    } else if (view === 'search') {
+                        // Search route
                         const query = searchParams.get('q');
                         if (query) {
                             searchQuery.value = query;
                             searchBooks();
-                            return;
                         }
-                    } 
-                    // Check for category route
-                    else if (path.includes('/category/')) {
-                        const parts = path.split('/category/');
-                        const category = parts[1].replace(/\/index\.html$/, '');
-                        selectedCategory.value = category;
-                        searchBooksByCategory(category);
                         return;
-                    } 
-                    // Check for library route
-                    else if (path.includes('/library')) {
+                    } else if (view === 'category') {
+                        // Category route
+                        const category = searchParams.get('id');
+                        if (category) {
+                            selectedCategory.value = category;
+                            searchBooksByCategory(category);
+                        }
+                        return;
+                    } else if (view === 'library') {
+                        // Library route
                         currentView.value = 'library';
                         return;
                     }
@@ -1074,20 +1073,20 @@
                     if (route === 'book' && params.book) {
                         const book = params.book;
                         const identifier = getBookIdentifier(book);
-                        updateURL(`/book/${identifier}`, book.title);
+                        updateURL({ view: 'book', id: identifier }, book.title);
                         selectBook(book);
                     } else if (route === 'search' && params.query) {
-                        updateURL(`/search?q=${encodeURIComponent(params.query)}`, `Search: ${params.query}`);
+                        updateURL({ view: 'search', q: params.query }, `Search: ${params.query}`);
                         searchBooks();
                     } else if (route === 'category' && params.category) {
-                        updateURL(`/category/${params.category}`, `Category: ${getCategoryName(params.category)}`);
+                        updateURL({ view: 'category', id: params.category }, `Category: ${getCategoryName(params.category)}`);
                         selectCategory(params.category);
                     } else if (route === 'library') {
-                        updateURL('/library', 'My Library');
+                        updateURL({ view: 'library' }, 'My Library');
                         currentView.value = 'library';
                     } else {
                         // Home
-                        updateURL('/', 'BookNook');
+                        updateURL({}, 'BookNook');
                         currentView.value = 'search';
                         selectedBook.value = null;
                     }
@@ -1284,7 +1283,7 @@
                     selectedCategory.value = null;
                     
                     // Update URL for searchability
-                    updateURL(`/search?q=${encodeURIComponent(searchQuery.value)}`, `Search: ${searchQuery.value}`);
+                    updateURL({ view: 'search', q: searchQuery.value }, `Search: ${searchQuery.value}`);
                     
                     try {
                         const openLibraryResponse = await fetch(`https://openlibrary.org/search.json?q=${encodeURIComponent(searchQuery.value)}`);
@@ -1320,7 +1319,7 @@
                     currentView.value = 'search';
                     
                     // Update URL
-                    updateURL(`/category/${categoryId}`, `Category: ${getCategoryName(categoryId)}`);
+                    updateURL({ view: 'category', id: categoryId }, `Category: ${getCategoryName(categoryId)}`);
                 };
 
                 // Get book cover URL
@@ -1374,7 +1373,7 @@
                     
                     // Update URL with book identifier
                     const identifier = getBookIdentifier(book);
-                    updateURL(`/book/${identifier}`, book.title);
+                    updateURL({ view: 'book', id: identifier }, book.title);
                     
                     // Try to get additional details from Google Books API
                     try {
