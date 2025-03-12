@@ -1,4 +1,26 @@
-<!DOCTYPE html>
+/* Footer styles */
+        .app-footer {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 1rem;
+            text-align: center;
+            margin-top: 2rem;
+            width: 100%;
+        }
+        
+        .footer-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+        
+        .version {
+            font-weight: bold;
+            color: var(--accent-color);
+        }<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -668,31 +690,6 @@
                 max-width: none;
                 margin: 0;
             }
-
-            /* Footer styles */
-        .app-footer {
-            background-color: var(--primary-color);
-            color: white;
-            padding: 1rem;
-            text-align: center;
-            margin-top: 2rem;
-            width: 100%;
-        }
-        
-        .footer-content {
-            max-width: 1400px;
-            margin: 0 auto;
-            position: 0 0;
-            display: absolute;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-        
-        .version {
-            font-weight: bold;
-            color: var(--accent-color);
-        }
         }
     </style>
 </head>
@@ -937,12 +934,12 @@
                 </div>
             </main>
             
-            <!-- <footer class="app-footer">
+            <footer class="app-footer">
                 <div class="footer-content">
                     <p>BookNook - Your Personal Book Discovery Tool</p>
                     <p class="version">v1.3</p>
                 </div>
-            </footer> -->
+            </footer>
         </div>
 
         <!-- Create List Modal -->
@@ -1055,31 +1052,35 @@
                 
                 // Route handling
                 const parseRoute = () => {
-                    const basePath = getBasePath();
-                    const path = window.location.pathname.replace(basePath, '');
+                    const path = window.location.pathname;
                     const searchParams = new URLSearchParams(window.location.search);
                     
+                    // Check for book detail route
                     if (path.includes('/book/')) {
-                        // Book detail route
-                        const identifier = path.split('/book/')[1];
+                        const parts = path.split('/book/');
+                        const identifier = parts[1].replace(/\/index\.html$/, '');
                         loadBookByIdentifier(identifier);
                         return;
-                    } else if (path.includes('/search')) {
-                        // Search route
+                    } 
+                    // Check for search route
+                    else if (path.includes('/search')) {
                         const query = searchParams.get('q');
                         if (query) {
                             searchQuery.value = query;
                             searchBooks();
                             return;
                         }
-                    } else if (path.includes('/category/')) {
-                        // Category route
-                        const category = path.split('/category/')[1];
+                    } 
+                    // Check for category route
+                    else if (path.includes('/category/')) {
+                        const parts = path.split('/category/');
+                        const category = parts[1].replace(/\/index\.html$/, '');
                         selectedCategory.value = category;
                         searchBooksByCategory(category);
                         return;
-                    } else if (path.includes('/library')) {
-                        // Library route
+                    } 
+                    // Check for library route
+                    else if (path.includes('/library')) {
                         currentView.value = 'library';
                         return;
                     }
