@@ -234,10 +234,66 @@
             margin-bottom: 0.5rem;
         }
 
+        .book-rating {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.5rem;
+        }
+
+        .stars {
+            color: #FF8F00;
+            display: inline-flex;
+            gap: 2px;
+        }
+
+        .rating-text {
+            margin-left: 5px;
+            font-size: 0.8rem;
+            color: var(--text-light);
+        }
+
         .book-year {
             color: var(--text-light);
             font-size: 0.8rem;
             margin-top: auto;
+        }
+        
+        .goodreads-rating {
+            background-color: #F4F1EA;
+            border-radius: var(--radius);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .goodreads-rating h3 {
+            color: #382110;
+            margin-bottom: 0.5rem;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .goodreads-rating h3 i {
+            color: #FF8F00;
+        }
+        
+        .rating-display {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 0.5rem;
+        }
+        
+        .rating-score {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #382110;
+        }
+        
+        .rating-count {
+            font-size: 0.9rem;
+            color: #767676;
         }
 
         /* Book detail styles */
@@ -677,13 +733,23 @@
                                         <i class="fas fa-file"></i>
                                         <span>{{ selectedBook.number_of_pages_median }} pages</span>
                                     </div>
-                                    <div class="meta-item" v-if="selectedBook.ratings_average">
-                                        <i class="fas fa-star"></i>
-                                        <span>{{ Math.round(selectedBook.ratings_average * 10) / 10 }}</span>
-                                    </div>
                                     <div class="meta-item" v-if="getBookLanguage(selectedBook)">
                                         <i class="fas fa-language"></i>
                                         <span>{{ getBookLanguage(selectedBook) }}</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="goodreads-rating" v-if="selectedBook.ratings_average">
+                                    <h3><i class="fas fa-star"></i> Goodreads Rating</h3>
+                                    <div class="rating-display">
+                                        <div class="stars">
+                                            <i v-for="i in 5" :key="i" 
+                                              :class="['far', i <= Math.round(selectedBook.ratings_average) ? 'fas fa-star' : 'far fa-star']"></i>
+                                        </div>
+                                        <span class="rating-score">{{ Math.round(selectedBook.ratings_average * 10) / 10 }}/5</span>
+                                    </div>
+                                    <div class="rating-count" v-if="selectedBook.ratings_count">
+                                        <span>{{ selectedBook.ratings_count.toLocaleString() }} ratings</span>
                                     </div>
                                 </div>
                                 
@@ -753,6 +819,13 @@
                                 <div class="book-info">
                                     <h3 class="book-title">{{ book.title }}</h3>
                                     <p class="book-author">{{ getBookAuthor(book) }}</p>
+                                    <div class="book-rating" v-if="book.ratings_average">
+                                        <div class="stars">
+                                            <i v-for="i in 5" :key="i" 
+                                               :class="['far', i <= Math.round(book.ratings_average) ? 'fas fa-star' : 'far fa-star']"></i>
+                                        </div>
+                                        <span class="rating-text">{{ Math.round(book.ratings_average * 10) / 10 }}</span>
+                                    </div>
                                     <p class="book-year" v-if="book.first_publish_year">
                                         {{ book.first_publish_year }}
                                     </p>
@@ -1059,8 +1132,16 @@
                         const googleData = await googleResponse.json();
                         
                         if (googleData.items && googleData.items.length > 0) {
+                            const volumeInfo = googleData.items[0].volumeInfo;
+                            
+                            // If Open Library doesn't have ratings, try to use Google's
+                            if (!book.ratings_average && volumeInfo.averageRating) {
+                                book.ratings_average = volumeInfo.averageRating;
+                                book.ratings_count = volumeInfo.ratingsCount || 0;
+                            }
+                            
                             selectedBookDetails.value = {
-                                description: googleData.items[0].volumeInfo.description || null,
+                                description: volumeInfo.description || null,
                                 saleInfo: googleData.items[0].saleInfo || null
                             };
                         } else {
