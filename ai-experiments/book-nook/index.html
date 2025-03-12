@@ -1506,7 +1506,7 @@
                     
                     // Update URL
                     const identifier = getBookIdentifier(book);
-                    updateURL(`/book/${identifier}`, book.title);
+                    updateURL({ view: 'book', id: identifier }, book.title);
                     
                     // Try to get additional details
                     selectBook(book);
