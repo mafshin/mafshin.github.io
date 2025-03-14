@@ -1,0 +1,1767 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Large Language Models: An Interactive Guide</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+  <style>
+    :root {
+      --primary: #2c3e50;
+      --secondary: #3498db;
+      --accent: #e74c3c;
+      --light: #ecf0f1;
+      --dark: #2c3e50;
+      --success: #2ecc71;
+      --warning: #f39c12;
+      --info: #3498db;
+      --code-bg: #1e1e1e;
+      --code-text: #f8f8f2;
+      --font-mono: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      line-height: 1.6;
+      color: var(--dark);
+      background-color: var(--light);
+      padding: 0;
+      margin: 0;
+    }
+    
+    .app-container {
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    .sidebar {
+      width: 250px;
+      background-color: var(--primary);
+      color: white;
+      padding: 1rem;
+      overflow-y: auto;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+    }
+    
+    .content {
+      flex: 1;
+      padding: 2rem;
+      overflow-y: auto;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    h1, h2, h3, h4 {
+      color: var(--primary);
+      margin-bottom: 1rem;
+      margin-top: 1.5rem;
+    }
+    
+    h1 {
+      font-size: 2.2rem;
+      border-bottom: 2px solid var(--secondary);
+      padding-bottom: 0.5rem;
+      margin-top: 0;
+    }
+    
+    h2 {
+      font-size: 1.8rem;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 0.25rem;
+    }
+    
+    h3 {
+      font-size: 1.4rem;
+    }
+    
+    p {
+      margin-bottom: 1rem;
+    }
+    
+    .nav-list {
+      list-style: none;
+    }
+    
+    .nav-item {
+      padding: 0.5rem;
+      cursor: pointer;
+      border-radius: 4px;
+      margin-bottom: 0.25rem;
+    }
+    
+    .nav-item:hover {
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+    
+    .nav-item.active {
+      background-color: var(--secondary);
+    }
+    
+    .card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      padding: 1.5rem;
+      margin-bottom: 2rem;
+    }
+    
+    .code-block {
+      background-color: var(--code-bg);
+      color: var(--code-text);
+      padding: 1rem;
+      border-radius: 5px;
+      font-family: var(--font-mono);
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+    
+    .btn {
+      display: inline-block;
+      background-color: var(--secondary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      font-size: 1rem;
+      margin-right: 0.5rem;
+      margin-bottom: 0.5rem;
+      transition: background-color 0.2s;
+    }
+    
+    .btn:hover {
+      background-color: #2980b9;
+    }
+    
+    .btn.primary {
+      background-color: var(--primary);
+    }
+    
+    .btn.primary:hover {
+      background-color: #1e2b38;
+    }
+    
+    .btn.accent {
+      background-color: var(--accent);
+    }
+    
+    .btn.accent:hover {
+      background-color: #c0392b;
+    }
+    
+    .tabs {
+      display: flex;
+      margin-bottom: 1rem;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .tab {
+      padding: 0.5rem 1rem;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+    }
+    
+    .tab.active {
+      border-bottom: 2px solid var(--secondary);
+      color: var(--secondary);
+    }
+    
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    
+    .figure {
+      text-align: center;
+      margin: 1.5rem 0;
+    }
+    
+    .figure svg {
+      max-width: 100%;
+    }
+    
+    .figure figcaption {
+      font-style: italic;
+      color: #666;
+      margin-top: 0.5rem;
+    }
+    
+    .attention-cell {
+      stroke: #ddd;
+      stroke-width: 1;
+    }
+    
+    .slider-container {
+      margin: 1rem 0;
+    }
+    
+    .slider-container label {
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+    
+    .slider {
+      width: 100%;
+    }
+    
+    .textarea {
+      width: 100%;
+      padding: 0.75rem;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+      margin-bottom: 1rem;
+      min-height: 100px;
+    }
+    
+    .note {
+      background-color: #e3f2fd;
+      border-left: 4px solid var(--info);
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .tip {
+      background-color: #e8f5e9;
+      border-left: 4px solid var(--success);
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .warning {
+      background-color: #fff3e0;
+      border-left: 4px solid var(--warning);
+      padding: 1rem;
+      margin: 1rem 0;
+      border-radius: 0 4px 4px 0;
+    }
+    
+    .toggle-content {
+      margin: 1rem 0;
+    }
+    
+    .toggle-btn {
+      background: none;
+      border: none;
+      color: var(--secondary);
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      font-weight: bold;
+    }
+    
+    .toggle-btn::before {
+      content: "";
+      display: inline-block;
+      width: 0.6rem;
+      height: 0.6rem;
+      border-right: 2px solid var(--secondary);
+      border-bottom: 2px solid var(--secondary);
+      margin-right: 0.5rem;
+      transform: rotate(-45deg);
+      transition: transform 0.2s;
+    }
+    
+    .toggle-btn.expanded::before {
+      transform: rotate(45deg);
+    }
+    
+    .expand-enter-active,
+    .expand-leave-active {
+      transition: all 0.3s;
+      overflow: hidden;
+    }
+    
+    .expand-enter-from,
+    .expand-leave-to {
+      height: 0;
+      opacity: 0;
+    }
+
+    .token-grid {
+      display: grid;
+      gap: 4px;
+    }
+
+    .token {
+      padding: 4px 8px;
+      border-radius: 4px;
+      background-color: #e0e0e0;
+      display: inline-block;
+    }
+
+    .highlighted {
+      background-color: rgba(232, 162, 64, 0.3);
+    }
+
+    .strongly-highlighted {
+      background-color: rgba(231, 76, 60, 0.6);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="app" class="app-container">
+    <div class="sidebar">
+      <h3 style="color: white; margin-top: 0;">LLM Guide</h3>
+      <ul class="nav-list">
+        <li v-for="(section, index) in sections" 
+            :key="index" 
+            @click="activeSection = index"
+            :class="['nav-item', { active: activeSection === index }]">
+          {{ section.title }}
+        </li>
+      </ul>
+      <div style="margin-top: 2rem; font-size: 0.8rem; opacity: 0.7;">
+        <p>Created with Vue.js</p>
+        <p>For senior programmers</p>
+      </div>
+    </div>
+    
+    <div class="content">
+      <component :is="sections[activeSection].component"></component>
+    </div>
+  </div>
+
+  <script type="text/x-template" id="intro-template">
+    <div>
+      <h1>Large Language Models: An Interactive Guide</h1>
+      
+      <div class="card">
+        <h2>Welcome to the Interactive LLM Guide</h2>
+        <p>This guide is designed for senior programmers who want to understand the core concepts and inner workings of Large Language Models (LLMs). Through interactive visualizations and code examples, you'll gain a deeper understanding of how these powerful AI systems work.</p>
+        
+        <div class="grid">
+          <div class="card">
+            <h3>What You'll Learn</h3>
+            <ul>
+              <li>Transformer architecture and attention mechanisms</li>
+              <li>How LLMs are trained and fine-tuned</li>
+              <li>Prompt engineering techniques</li>
+              <li>Practical applications and limitations</li>
+              <li>Future directions in LLM development</li>
+            </ul>
+          </div>
+          
+          <div class="card">
+            <h3>Prerequisites</h3>
+            <p>This guide assumes you have:</p>
+            <ul>
+              <li>Strong programming background</li>
+              <li>Basic understanding of machine learning concepts</li>
+              <li>Familiarity with neural networks</li>
+              <li>Interest in natural language processing</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="note">
+          <h3>Interactive Learning</h3>
+          <p>Throughout this guide, you'll find interactive components that help visualize complex concepts. Experiment with these components to deepen your understanding.</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>What are Large Language Models?</h2>
+        <p>Large Language Models (LLMs) are a type of artificial intelligence that can understand, generate, and manipulate human language. They're based on neural networks trained on vast amounts of text data to predict the next word in a sequence.</p>
+        
+        <p>Modern LLMs use the Transformer architecture, which leverages self-attention mechanisms to process text in parallel rather than sequentially. This parallel processing allows the model to capture complex dependencies across words and phrases, regardless of their distance in the text.</p>
+        
+        <div class="toggle-content">
+          <button @click="toggleEvolution" class="toggle-btn" :class="{ expanded: showEvolution }">
+            Evolution of Language Models
+          </button>
+          <div v-if="showEvolution">
+            <p>The journey to modern LLMs has been marked by several key developments:</p>
+            <ul>
+              <li><strong>N-gram Models (1990s):</strong> Simple statistical models that predict words based on the previous N-1 words.</li>
+              <li><strong>Recurrent Neural Networks (2000s):</strong> Neural networks that process sequences by maintaining a hidden state.</li>
+              <li><strong>LSTMs and GRUs (2010s):</strong> Enhanced RNNs with mechanisms to better handle long-range dependencies.</li>
+              <li><strong>Transformers (2017):</strong> Introduced in "Attention is All You Need" paper, fundamentally changing NLP with parallel processing.</li>
+              <li><strong>BERT (2018):</strong> Bidirectional encoder representations from transformers, pre-trained on masked language modeling.</li>
+              <li><strong>GPT series (2018+):</strong> Generative pre-trained transformers, scaling up model size and capabilities.</li>
+              <li><strong>Modern LLMs (2020+):</strong> Massive models with hundreds of billions of parameters trained on diverse data.</li>
+            </ul>
+          </div>
+        </div>
+        
+        <figure class="figure">
+          <div class="scaling-visualization" ref="scalingVisualization"></div>
+          <figcaption>Interactive: LLM scaling over time - model sizes have grown exponentially</figcaption>
+        </figure>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/x-template" id="architecture-template">
+    <div>
+      <h1>Transformer Architecture</h1>
+      
+      <div class="card">
+        <h2>The Core of Modern LLMs</h2>
+        <p>Large Language Models are based on the Transformer architecture, introduced in the seminal 2017 paper "Attention is All You Need" by Vaswani et al. Unlike previous sequence models like RNNs and LSTMs that process tokens sequentially, Transformers process all tokens in parallel through self-attention mechanisms.</p>
+        
+        <figure class="figure">
+          <svg id="transformer-architecture" width="800" height="500" viewBox="0 0 800 500">
+            <!-- High-level transformer architecture diagram -->
+            <g transform="translate(50, 50)">
+              <!-- Input Embeddings -->
+              <rect x="0" y="0" width="700" height="60" rx="5" fill="#e3f2fd" stroke="#2196f3" stroke-width="2"></rect>
+              <text x="350" y="35" text-anchor="middle" font-size="16">Token + Position Embeddings</text>
+              
+              <!-- Transformer Blocks -->
+              <g v-for="(_, i) in 3" :key="i" :transform="`translate(0, ${100 + i * 100})`">
+                <rect x="0" y="0" width="700" height="80" rx="5" fill="#fff8e1" stroke="#ffc107" stroke-width="2"></rect>
+                <text x="350" y="30" text-anchor="middle" font-size="16">Multi-Head Self-Attention</text>
+                <text x="350" y="55" text-anchor="middle" font-size="16">Feed-Forward Network</text>
+                
+                <!-- Add Layer Norm indicators -->
+                <rect x="670" y="5" width="20" height="20" fill="#4caf50" rx="3"></rect>
+                <text x="680" y="19" text-anchor="middle" font-size="12" fill="white">LN</text>
+                
+                <rect x="670" y="55" width="20" height="20" fill="#4caf50" rx="3"></rect>
+                <text x="680" y="69" text-anchor="middle" font-size="12" fill="white">LN</text>
+                
+                <!-- Add skip connections -->
+                <path d="M 10 -10 L 10 40 L 690 40 L 690 -10" fill="none" stroke="#9c27b0" stroke-width="2" stroke-dasharray="5,5"></path>
+              </g>
+              
+              <!-- Output Layer -->
+              <rect x="0" y="400" width="700" height="60" rx="5" fill="#e8f5e9" stroke="#4caf50" stroke-width="2"></rect>
+              <text x="350" y="435" text-anchor="middle" font-size="16">Linear Layer + Softmax</text>
+              
+              <!-- Connecting lines -->
+              <line x1="350" y1="60" x2="350" y2="100" stroke="#555" stroke-width="2"></line>
+              <line x1="350" y1="180" x2="350" y2="200" stroke="#555" stroke-width="2"></line>
+              <line x1="350" y1="280" x2="350" y2="300" stroke="#555" stroke-width="2"></line>
+              <line x1="350" y1="380" x2="350" y2="400" stroke="#555" stroke-width="2"></line>
+            </g>
+          </svg>
+          <figcaption>The Transformer architecture consists of stacked self-attention and feed-forward layers</figcaption>
+        </figure>
+        
+        <div class="note">
+          <p>Modern LLMs typically use only the <strong>decoder</strong> portion of the original Transformer architecture (like GPT), while earlier models like BERT used the <strong>encoder</strong> portion. The key difference is that decoder models can only attend to previous tokens (causal/masked attention), while encoder models can attend to all tokens in the input sequence.</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Self-Attention Mechanism</h2>
+        <p>The self-attention mechanism is what allows LLMs to weigh the importance of different words in relation to each other. For each token in the input, the model learns to attend to relevant parts of the sequence, regardless of their distance.</p>
+        
+        <div class="tabs">
+          <div class="tab" :class="{ active: attentionTab === 'concept' }" @click="attentionTab = 'concept'">Concept</div>
+          <div class="tab" :class="{ active: attentionTab === 'math' }" @click="attentionTab = 'math'">Mathematics</div>
+          <div class="tab" :class="{ active: attentionTab === 'code' }" @click="attentionTab = 'code'">Pseudocode</div>
+        </div>
+        
+        <div v-if="attentionTab === 'concept'">
+          <p>Self-attention allows each word to "look at" other words in the sentence to gather context:</p>
+          
+          <div>
+            <div class="slider-container">
+              <label>Select a token to see what it attends to:</label>
+              <input type="range" min="0" max="5" v-model="selectedToken" class="slider">
+              <p>Selected token: <strong>{{ sentenceTokens[selectedToken] }}</strong></p>
+            </div>
+            
+            <div>
+              <div style="display: flex; flex-wrap: wrap; margin-bottom: 1rem;">
+                <div v-for="(token, idx) in sentenceTokens" :key="idx" 
+                    class="token" 
+                    :class="{
+                      'highlighted': idx !== selectedToken && attentionValues[selectedToken][idx] > 0.1,
+                      'strongly-highlighted': idx !== selectedToken && attentionValues[selectedToken][idx] > 0.3,
+                      'primary': idx === selectedToken
+                    }"
+                    :style="{
+                      backgroundColor: idx === selectedToken ? '#3498db' : '',
+                      color: idx === selectedToken ? 'white' : '',
+                      marginRight: '5px'
+                    }">
+                  {{ token }}
+                </div>
+              </div>
+              <p><small>Darker highlighting indicates stronger attention.</small></p>
+            </div>
+          </div>
+          
+          <div class="tip">
+            <p>In practice, LLMs use <strong>multi-head attention</strong>, where multiple attention mechanisms run in parallel. This allows the model to attend to different aspects of the input simultaneously. For example, one head might focus on syntactic relationships while another focuses on semantic relationships.</p>
+          </div>
+        </div>
+        
+        <div v-if="attentionTab === 'math'">
+          <p>The self-attention mechanism can be expressed mathematically as:</p>
+          
+          <ol>
+            <li>For each token, compute Query (Q), Key (K), and Value (V) vectors by multiplying the token embedding by learned weight matrices:
+              <div class="code-block">
+                Q = X * W_q
+                K = X * W_k
+                V = X * W_v
+              </div>
+              where X is the input embeddings, and W_q, W_k, W_v are learned weight matrices.
+            </li>
+            <li>Compute attention scores between each token and all other tokens:
+              <div class="code-block">
+                Attention(Q, K, V) = softmax(Q * K^T / sqrt(d_k)) * V
+              </div>
+              where d_k is the dimension of the key vectors, and the division by sqrt(d_k) is for scaling.
+            </li>
+          </ol>
+          
+          <div class="figure">
+            <svg id="attention-matrix" width="400" height="300" ref="attentionMatrix"></svg>
+            <figcaption>Attention score heatmap between tokens</figcaption>
+          </div>
+        </div>
+        
+        <div v-if="attentionTab === 'code'">
+          <p>Here's a simplified implementation of self-attention in Python:</p>
+          
+          <div class="code-block">
+import numpy as np
+
+def self_attention(X, d_k):
+    # X: input embeddings of shape (batch_size, seq_len, d_model)
+    # Create random weights for demonstration
+    W_q = np.random.randn(X.shape[-1], d_k)
+    W_k = np.random.randn(X.shape[-1], d_k)
+    W_v = np.random.randn(X.shape[-1], d_k)
+    
+    # Compute Q, K, V
+    Q = np.matmul(X, W_q)  # (batch_size, seq_len, d_k)
+    K = np.matmul(X, W_k)  # (batch_size, seq_len, d_k)
+    V = np.matmul(X, W_v)  # (batch_size, seq_len, d_k)
+    
+    # Compute attention scores
+    scores = np.matmul(Q, K.transpose(0, 2, 1))  # (batch_size, seq_len, seq_len)
+    scores = scores / np.sqrt(d_k)
+    
+    # Apply softmax to get attention weights
+    attention_weights = np.exp(scores) / np.sum(np.exp(scores), axis=-1, keepdims=True)
+    
+    # Compute weighted sum
+    output = np.matmul(attention_weights, V)  # (batch_size, seq_len, d_k)
+    
+    return output, attention_weights
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Position Embeddings</h2>
+        <p>Unlike RNNs, Transformers process all tokens in parallel, which means they don't inherently understand token order. Position embeddings solve this by adding information about a token's position in the sequence.</p>
+        
+        <div class="tabs">
+          <div class="tab" :class="{ active: positionTab === 'concept' }" @click="positionTab = 'concept'">Concept</div>
+          <div class="tab" :class="{ active: positionTab === 'implementation' }" @click="positionTab = 'implementation'">Implementation</div>
+        </div>
+        
+        <div v-if="positionTab === 'concept'">
+          <p>The original Transformer used sinusoidal position embeddings, where each position is encoded as a vector of sine and cosine values at different frequencies:</p>
+          
+          <div class="figure">
+            <svg id="position-embeddings" width="600" height="300" ref="positionEmbeddings"></svg>
+            <figcaption>Visualization of sinusoidal position embeddings for different positions and dimensions</figcaption>
+          </div>
+          
+          <p>The advantage of sinusoidal embeddings is that they allow the model to extrapolate to sequence lengths not seen during training. However, many modern LLMs use learned position embeddings instead, which are simply vectors that the model learns during training.</p>
+        </div>
+        
+        <div v-if="positionTab === 'implementation'">
+          <div class="code-block">
+def get_sinusoidal_position_encoding(seq_len, d_model):
+    """Generate sinusoidal position embeddings."""
+    # Create position indices
+    positions = np.arange(seq_len)[:, np.newaxis]  # (seq_len, 1)
+    
+    # Calculate division term
+    div_term = np.exp(np.arange(0, d_model, 2) * -(np.log(10000.0) / d_model))
+    
+    # Initialize embeddings
+    pos_encoding = np.zeros((seq_len, d_model))
+    
+    # Even indices: sine
+    pos_encoding[:, 0::2] = np.sin(positions * div_term)
+    
+    # Odd indices: cosine
+    pos_encoding[:, 1::2] = np.cos(positions * div_term)
+    
+    return pos_encoding
+          </div>
+          
+          <div class="note">
+            <p>Modern LLMs use various position embedding strategies:</p>
+            <ul>
+              <li><strong>Learned absolute</strong>: Simple but limited to trained sequence length</li>
+              <li><strong>Rotary (RoPE)</strong>: Encodes relative positions through rotation in complex space</li>
+              <li><strong>ALiBi</strong>: Attention with Linear Biases, adds a distance-based bias to attention scores</li>
+              <li><strong>Relative position embeddings</strong>: Explicitly model the relationship between pairs of tokens</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/x-template" id="training-template">
+    <div>
+      <h1>Training Large Language Models</h1>
+      
+      <div class="card">
+        <h2>Pre-training and Fine-tuning</h2>
+        <p>Modern LLMs follow a two-stage training paradigm:</p>
+        
+        <div class="grid">
+          <div class="card">
+            <h3>1. Pre-training</h3>
+            <p>The model is trained on a massive corpus of text data to predict the next token in a sequence. This teaches the model general language understanding and generation capabilities.</p>
+            <ul>
+              <li>Uses self-supervised learning (no manual labels)</li>
+              <li>Typically trains on trillions of tokens</li>
+              <li>Computationally intensive (can cost millions of dollars)</li>
+              <li>Model learns grammar, facts, reasoning, and more</li>
+            </ul>
+          </div>
+          
+          <div class="card">
+            <h3>2. Fine-tuning</h3>
+            <p>The pre-trained model is further trained on specific datasets to align with particular tasks or values.</p>
+            <ul>
+              <li>Supervised Fine-Tuning (SFT): Human-labeled examples</li>
+              <li>Reinforcement Learning from Human Feedback (RLHF)</li>
+              <li>Direct Preference Optimization (DPO)</li>
+              <li>Constitutional AI methods</li>
+            </ul>
+          </div>
+        </div>
+        
+        <figure class="figure">
+          <svg width="700" height="250" viewBox="0 0 700 250">
+            <!-- Pre-training -->
+            <rect x="50" y="30" width="600" height="80" rx="10" fill="#e3f2fd" stroke="#2196f3" stroke-width="2"></rect>
+            <text x="350" y="65" text-anchor="middle" font-size="20" font-weight="bold">Pre-training</text>
+            <text x="350" y="95" text-anchor="middle" font-size="14">Next Token Prediction on Massive Text Corpus</text>
+            
+            <!-- Fine-tuning -->
+            <rect x="50" y="140" width="600" height="80" rx="10" fill="#e8f5e9" stroke="#4caf50" stroke-width="2"></rect>
+            <text x="350" y="175" text-anchor="middle" font-size="20" font-weight="bold">Fine-tuning</text>
+            <text x="350" y="205" text-anchor="middle" font-size="14">Alignment with Human Preferences</text>
+            
+            <!-- Arrow -->
+            <path d="M 350 110 L 350 140" stroke="#555" stroke-width="3" marker-end="url(#arrowhead)"></path>
+            
+            <!-- Arrow marker definition -->
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#555" />
+              </marker>
+            </defs>
+          </svg>
+          <figcaption>The two-stage training paradigm of modern LLMs</figcaption>
+        </figure>
+      </div>
+      
+      <div class="card">
+        <h2>Next Token Prediction</h2>
+        <p>The core training objective for LLMs is next token prediction: given a sequence of tokens, predict the next token that should follow. This simple objective is powerful enough to learn complex language understanding and generation.</p>
+        
+        <div class="interactive-next-token">
+          <div class="slider-container">
+            <label>Move the slider to reveal the next tokens:</label>
+            <input type="range" v-model="tokensToShow" min="5" max="20" class="slider">
+          </div>
+          
+          <div class="token-grid" style="grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));">
+            <div v-for="(token, idx) in exampleText.split(' ')" :key="idx" class="token" v-if="idx < tokensToShow">
+              {{ token }}
+            </div>
+          </div>
+          
+          <div class="note" style="margin-top: 1rem;">
+            <p>During training, the model would:</p>
+            <ol>
+              <li>Process all tokens in the sequence</li>
+              <li>For each position, predict the next token</li>
+              <li>Compare its prediction to the actual next token</li>
+              <li>Compute the loss (typically cross-entropy)</li>
+              <li>Backpropagate and update model weights</li>
+            </ol>
+          </div>
+        </div>
+        
+        <div class="code-block">
+# Simplified example of computing cross-entropy loss for next token prediction
+import torch
+import torch.nn.functional as F
+
+# Assume logits is the model's output (batch_size, seq_len, vocab_size)
+# targets is the ground truth next tokens (batch_size, seq_len)
+
+def compute_loss(logits, targets, ignore_index=-100):
+    # Shift logits and targets for next token prediction
+    shift_logits = logits[:, :-1, :].contiguous()
+    shift_targets = targets[:, 1:].contiguous()
+    
+    # Flatten the logits and targets
+    loss = F.cross_entropy(
+        shift_logits.view(-1, shift_logits.size(-1)),
+        shift_targets.view(-1),
+        ignore_index=ignore_index
+    )
+    
+    return loss
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Reinforcement Learning from Human Feedback (RLHF)</h2>
+        <p>RLHF is a technique used to align language models with human preferences. It involves several steps:</p>
+        
+        <ol>
+          <li><strong>Generate responses</strong>: The pre-trained model generates multiple responses to prompts.</li>
+          <li><strong>Human evaluation</strong>: Human evaluators rank or compare these responses based on quality, helpfulness, harmlessness, etc.</li>
+          <li><strong>Train a reward model</strong>: A model is trained to predict human preferences based on these comparisons.</li>
+          <li><strong>Optimize the language model</strong>: The language model is fine-tuned using reinforcement learning to maximize the reward model's scores.</li>
+        </ol>
+        
+        <figure class="figure">
+          <svg width="700" height="400" viewBox="0 0 700 400">
+            <!-- Initial LLM -->
+            <rect x="50" y="50" width="150" height="60" rx="5" fill="#e3f2fd" stroke="#2196f3" stroke-width="2"></rect>
+            <text x="125" y="85" text-anchor="middle" font-size="16">Pre-trained LLM</text>
+            
+            <!-- Generate responses -->
+            <rect x="300" y="50" width="150" height="60" rx="5" fill="#fff8e1" stroke="#ffc107" stroke-width="2"></rect>
+            <text x="375" y="85" text-anchor="middle" font-size="16">Generate Responses</text>
+            
+            <!-- Human feedback -->
+            <rect x="550" y="50" width="150" height="60" rx="5" fill="#f3e5f5" stroke="#9c27b0" stroke-width="2"></rect>
+            <text x="625" y="85" text-anchor="middle" font-size="16">Human Feedback</text>
+            
+            <!-- Reward model -->
+            <rect x="550" y="170" width="150" height="60" rx="5" fill="#e8f5e9" stroke="#4caf50" stroke-width="2"></rect>
+            <text x="625" y="205" text-anchor="middle" font-size="16">Reward Model</text>
+            
+            <!-- RL fine-tuning -->
+            <rect x="300" y="170" width="150" height="60" rx="5" fill="#ffebee" stroke="#f44336" stroke-width="2"></rect>
+            <text x="375" y="205" text-anchor="middle" font-size="16">RL Optimization</text>
+            
+            <!-- Final LLM -->
+            <rect x="50" y="170" width="150" height="60" rx="5" fill="#e3f2fd" stroke="#2196f3" stroke-width="2"></rect>
+            <text x="125" y="195" text-anchor="middle" font-size="16">Aligned LLM</text>
+            <text x="125" y="215" text-anchor="middle" font-size="12">(RLHF Model)</text>
+            
+            <!-- DPO flow -->
+            <rect x="50" y="290" width="150" height="60" rx="5" fill="#e3f2fd" stroke="#2196f3" stroke-width="2"></rect>
+            <text x="125" y="315" text-anchor="middle" font-size="16">Pre-trained LLM</text>
+            <text x="125" y="335" text-anchor="middle" font-size="12">(Reference Model)</text>
+            
+            <rect x="300" y="290" width="150" height="60" rx="5" fill="#fff3e0" stroke="#ff9800" stroke-width="2"></rect>
+            <text x="375" y="315" text-anchor="middle" font-size="16">Direct Preference</text>
+            <text x="375" y="335" text-anchor="middle" font-size="16">Optimization</text>
+            
+            <rect x="550" y="290" width="150" height="60" rx="5" fill="#e3f2fd" stroke="#2196f3" stroke-width="2"></rect>
+            <text x="625" y="315" text-anchor="middle" font-size="16">Aligned LLM</text>
+            <text x="625" y="335" text-anchor="middle" font-size="12">(DPO Model)</text>
+            
+            <!-- Connecting arrows RLHF -->
+            <path d="M 200 80 L 300 80" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 450 80 L 550 80" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 625 110 L 625 170" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 550 200 L 450 200" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 300 200 L 200 200" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            
+            <!-- Connecting arrows DPO -->
+            <path d="M 200 320 L 300 320" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 450 320 L 550 320" stroke="#555" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            
+            <!-- RLHF label -->
+            <rect x="50" y="10" width="650" height="240" rx="5" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="5,5"></rect>
+            <text x="70" y="30" font-size="16" font-weight="bold">RLHF Process</text>
+            
+            <!-- DPO label -->
+            <rect x="50" y="260" width="650" height="110" rx="5" fill="none" stroke="#999" stroke-width="2" stroke-dasharray="5,5"></rect>
+            <text x="70" y="280" font-size="16" font-weight="bold">DPO Process (Alternative)</text>
+          </svg>
+          <figcaption>RLHF process vs. Direct Preference Optimization (DPO)</figcaption>
+        </figure>
+        
+        <div class="tip">
+          <h3>Alternative: Direct Preference Optimization (DPO)</h3>
+          <p>DPO is a newer method that simplifies the RLHF process by eliminating the need for a separate reward model. It directly optimizes the language model to match human preferences using a preference dataset.</p>
+          <p>The key advantage of DPO is its simplicity and stability compared to traditional RL approaches. It requires less computational resources and tends to avoid common issues like reward hacking.</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Scaling Laws and Emergent Abilities</h2>
+        <p>Research has shown that LLM capabilities follow surprisingly predictable scaling laws, where performance improves as a power-law with:</p>
+        <ul>
+          <li>Model size (number of parameters)</li>
+          <li>Training compute (FLOPs used during training)</li>
+          <li>Dataset size (number of tokens)</li>
+        </ul>
+        
+        <figure class="figure" ref="scalingLawsChart">
+          <!-- D3 will render a chart here -->
+          <figcaption>Power-law scaling: Performance improves predictably with model size</figcaption>
+        </figure>
+        
+        <div class="toggle-content">
+          <button @click="toggleEmergent" class="toggle-btn" :class="{ expanded: showEmergent }">
+            Emergent Abilities
+          </button>
+          <div v-if="showEmergent">
+            <p>As LLMs scale to sufficient size, they exhibit emergent abilities that weren't explicitly trained for:</p>
+            <ul>
+              <li><strong>In-context learning</strong>: The ability to learn new tasks from examples provided in the prompt</li>
+              <li><strong>Chain-of-thought reasoning</strong>: Step-by-step problem solving</li>
+              <li><strong>Instruction following</strong>: Understanding and executing complex instructions</li>
+              <li><strong>Tool use</strong>: Learning to use provided tools or APIs</li>
+              <li><strong>Multilingual capabilities</strong>: Working across multiple languages without explicit training for translation</li>
+            </ul>
+            <p>These abilities often appear suddenly at certain scale thresholds rather than improving gradually.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/x-template" id="prompting-template">
+    <div>
+      <h1>Prompting Techniques</h1>
+      
+      <div class="card">
+        <h2>The Art of Prompt Engineering</h2>
+        <p>Prompt engineering is the practice of crafting inputs to LLMs to get desired outputs. It's become a crucial skill for effectively working with these models.</p>
+        
+        <div class="note">
+          <p>While newer models are better at following instructions, the way you structure your prompts still significantly impacts the quality and relevance of responses.</p>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Prompting Patterns and Techniques</h2>
+        
+        <div class="tabs">
+          <div class="tab" :class="{ active: promptingTab === 'basic' }" @click="promptingTab = 'basic'">Basic Techniques</div>
+          <div class="tab" :class="{ active: promptingTab === 'advanced' }" @click="promptingTab = 'advanced'">Advanced Techniques</div>
+          <div class="tab" :class="{ active: promptingTab === 'playground' }" @click="promptingTab = 'playground'">Playground</div>
+        </div>
+        
+        <div v-if="promptingTab === 'basic'">
+          <div class="grid">
+            <div class="card" v-for="(technique, index) in basicTechniques" :key="index">
+              <h3>{{ technique.name }}</h3>
+              <p>{{ technique.description }}</p>
+              <div class="code-block">{{ technique.example }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div v-if="promptingTab === 'advanced'">
+          <div class="grid">
+            <div class="card" v-for="(technique, index) in advancedTechniques" :key="index">
+              <h3>{{ technique.name }}</h3>
+              <p>{{ technique.description }}</p>
+              <div class="code-block">{{ technique.example }}</div>
+            </div>
+          </div>
+        </div>
+        
+        <div v-if="promptingTab === 'playground'">
+          <p>Experiment with different prompting techniques:</p>
+          
+          <div>
+            <select v-model="selectedTemplate" class="btn" style="margin-bottom: 1rem; background: #f5f5f5; color: #333;">
+              <option v-for="(template, index) in promptTemplates" :key="index" :value="template">
+                {{ template.name }}
+              </option>
+            </select>
+            
+            <button @click="applyTemplate" class="btn">Apply Template</button>
+          </div>
+          
+          <textarea v-model="userPrompt" class="textarea" placeholder="Edit your prompt here..."></textarea>
+          
+          <div class="note">
+            <p><strong>Tip:</strong> In a real LLM, this prompt would generate a response. This is a simplified demonstration to show prompt structure only.</p>
+          </div>
+          
+          <div class="tip">
+            <h3>Prompt Engineering Best Practices</h3>
+            <ul>
+              <li>Be specific and clear about what you want</li>
+              <li>Provide examples of desired outputs when possible</li>
+              <li>Break complex tasks into steps</li>
+              <li>Experiment with different phrasings</li>
+              <li>Iterate based on the responses you get</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Context Window and Token Limits</h2>
+        <p>Every LLM has a context window that limits how much text it can process at once. Understanding tokenization helps manage these limits effectively.</p>
+        
+        <div class="toggle-content">
+          <button @click="toggleTokenization" class="toggle-btn" :class="{ expanded: showTokenization }">
+            Understanding Tokenization
+          </button>
+          <div v-if="showTokenization">
+            <p>LLMs don't process text character by character or word by word. Instead, they use "tokens," which can be:</p>
+            <ul>
+              <li>Common words ("the", "and")</li>
+              <li>Parts of words ("ing", "pre")</li>
+              <li>Individual characters (especially for uncommon words)</li>
+            </ul>
+            
+            <div class="slider-container">
+              <label>See tokenization in action:</label>
+              <input type="range" v-model="tokenizationExample" min="0" max="2" class="slider">
+            </div>
+            
+            <div class="code-block">
+              <div v-if="tokenizationExample == 0">
+Text: "The quick brown fox jumps over the lazy dog."
+Tokens: ["The", " quick", " brown", " fox", " jumps", " over", " the", " lazy", " dog", "."]
+              </div>
+              <div v-if="tokenizationExample == 1">
+Text: "Supercalifragilisticexpialidocious is a long word."
+Tokens: ["Super", "c", "ali", "fra", "g", "il", "istic", "exp", "i", "ali", "doc", "ious", " is", " a", " long", " word", "."]
+              </div>
+              <div v-if="tokenizationExample == 2">
+Text: "在中国，人们说汉语。"
+Tokens: ["在", "中国", "，", "人们", "说", "汉语", "。"]
+              </div>
+            </div>
+            
+            <div class="note">
+              <p>Different models use different tokenizers with varying vocabulary sizes. GPT models typically use around 50,000 tokens in their vocabulary.</p>
+            </div>
+          </div>
+        </div>
+        
+        <figure class="figure">
+          <svg width="700" height="200" viewBox="0 0 700 200">
+            <rect x="50" y="50" width="600" height="100" rx="5" fill="#ecf0f1" stroke="#bdc3c7" stroke-width="2"></rect>
+            
+            <!-- Context window visualization -->
+            <rect x="70" y="70" width="300" height="60" rx="5" fill="#3498db" opacity="0.7"></rect>
+            <text x="220" y="105" text-anchor="middle" font-size="16" fill="white">Prompt</text>
+            
+            <rect x="370" y="70" width="260" height="60" rx="5" fill="#2ecc71" opacity="0.7"></rect>
+            <text x="500" y="105" text-anchor="middle" font-size="16" fill="white">Completion</text>
+            
+            <text x="350" y="170" text-anchor="middle" font-size="14">Context Window (e.g., 8K, 32K, 128K tokens)</text>
+          </svg>
+          <figcaption>The context window includes both the prompt and the model's response</figcaption>
+        </figure>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/x-template" id="applications-template">
+    <div>
+      <h1>Applications and Considerations</h1>
+      
+      <div class="card">
+        <h2>Real-world Applications</h2>
+        <p>LLMs are revolutionizing various fields through their ability to understand and generate human language. Here are some key application areas:</p>
+        
+        <div class="grid">
+          <div class="card" v-for="(app, index) in applications" :key="index">
+            <h3>{{ app.name }}</h3>
+            <p>{{ app.description }}</p>
+            <div class="code-block">{{ app.example }}</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Technical Limitations</h2>
+        <p>While powerful, LLMs have several important technical limitations to be aware of:</p>
+        
+        <div class="toggle-content">
+          <button @click="toggleLimitations" class="toggle-btn" :class="{ expanded: showLimitations }">
+            Common Limitations
+          </button>
+          <div v-if="showLimitations">
+            <ul>
+              <li><strong>Hallucinations</strong>: Models can generate plausible-sounding but factually incorrect information</li>
+              <li><strong>Knowledge cutoff</strong>: Models only know information up to their training cutoff date</li>
+              <li><strong>Reasoning limitations</strong>: Can struggle with complex logical reasoning, especially mathematical proofs</li>
+              <li><strong>Context window constraints</strong>: Limited by maximum sequence length</li>
+              <li><strong>Computational requirements</strong>: Large models require significant compute resources</li>
+              <li><strong>Deterministic behavior</strong>: Without randomness parameters, outputs can be predictable</li>
+              <li><strong>No inherent understanding</strong>: Models predict tokens based on patterns, not "understanding" in the human sense</li>
+            </ul>
+          </div>
+        </div>
+        
+        <div class="warning" style="margin-top: 1rem;">
+          <h3>Mitigating Hallucinations</h3>
+          <p>Strategies for minimizing incorrect outputs:</p>
+          <ul>
+            <li>Use retrieval-augmented generation (RAG) to ground responses in verified sources</li>
+            <li>Implement fact-checking components</li>
+            <li>Generate multiple responses and evaluate consistency</li>
+            <li>Ask models to cite sources or provide confidence levels</li>
+            <li>Fine-tune with techniques that penalize fabrication</li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Architectures for Production</h2>
+        <p>When deploying LLMs in production, several architectural patterns have emerged:</p>
+        
+        <figure class="figure">
+          <svg width="700" height="400" viewBox="0 0 700 400">
+            <!-- RAG Architecture -->
+            <rect x="50" y="30" width="600" height="150" rx="5" fill="#f8f9fa" stroke="#343a40" stroke-width="2"></rect>
+            <text x="350" y="50" text-anchor="middle" font-size="18" font-weight="bold">Retrieval-Augmented Generation (RAG)</text>
+            
+            <!-- RAG Components -->
+            <rect x="100" y="70" width="120" height="50" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="160" y="100" text-anchor="middle" font-size="14">User Query</text>
+            
+            <rect x="290" y="70" width="120" height="50" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="350" y="100" text-anchor="middle" font-size="14">Vector DB</text>
+            
+            <rect x="480" y="70" width="120" height="50" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="540" y="100" text-anchor="middle" font-size="14">LLM</text>
+            
+            <rect x="290" y="140" width="120" height="25" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="350" y="156" text-anchor="middle" font-size="12">Knowledge Base</text>
+            
+            <!-- RAG Arrows -->
+            <path d="M 220 95 L 290 95" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 410 95 L 480 95" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 350 70 L 350 50" stroke="#495057" stroke-width="1" stroke-dasharray="3,3"></path>
+            <path d="M 350 140 L 350 120" stroke="#495057" stroke-width="1" marker-end="url(#arrowhead)"></path>
+            
+            <!-- Agent Architecture -->
+            <rect x="50" y="210" width="600" height="170" rx="5" fill="#f8f9fa" stroke="#343a40" stroke-width="2"></rect>
+            <text x="350" y="230" text-anchor="middle" font-size="18" font-weight="bold">Agent-based Architecture</text>
+            
+            <!-- Agent Components -->
+            <rect x="80" y="260" width="110" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="135" y="283" text-anchor="middle" font-size="14">User Query</text>
+            
+            <rect x="290" y="260" width="120" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="350" y="283" text-anchor="middle" font-size="14">Controller LLM</text>
+            
+            <rect x="160" y="320" width="100" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="210" y="343" text-anchor="middle" font-size="12">Web Search</text>
+            
+            <rect x="290" y="320" width="100" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="340" y="343" text-anchor="middle" font-size="12">Calculator</text>
+            
+            <rect x="420" y="320" width="100" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="470" y="343" text-anchor="middle" font-size="12">Code Exec</text>
+            
+            <rect x="510" y="260" width="110" height="40" rx="5" fill="#e9ecef" stroke="#adb5bd" stroke-width="1"></rect>
+            <text x="565" y="283" text-anchor="middle" font-size="14">Response</text>
+            
+            <!-- Agent Arrows -->
+            <path d="M 190 280 L 290 280" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 410 280 L 510 280" stroke="#495057" stroke-width="2" marker-end="url(#arrowhead)"></path>
+            <path d="M 210 320 L 310 300" stroke="#495057" stroke-width="1" marker-end="url(#arrowhead)"></path>
+            <path d="M 340 320 L 340 300" stroke="#495057" stroke-width="1" marker-end="url(#arrowhead)"></path>
+            <path d="M 470 320 L 370 300" stroke="#495057" stroke-width="1" marker-end="url(#arrowhead)"></path>
+          </svg>
+          <figcaption>Common architectural patterns: RAG and Agent-based approaches</figcaption>
+        </figure>
+        
+        <div class="grid">
+          <div class="card">
+            <h3>RAG (Retrieval-Augmented Generation)</h3>
+            <p>Combines LLMs with retrieval systems to provide up-to-date, factual information:</p>
+            <ol>
+              <li>Index documents in a vector database</li>
+              <li>For each query, retrieve relevant documents</li>
+              <li>Augment the prompt with retrieved information</li>
+              <li>Generate response grounded in retrieved facts</li>
+            </ol>
+          </div>
+          
+          <div class="card">
+            <h3>Agent-based Architectures</h3>
+            <p>Extend LLMs with tools and planning capabilities:</p>
+            <ol>
+              <li>LLM acts as a controller/planner</li>
+              <li>Can use tools (search, calculators, APIs)</li>
+              <li>May involve multiple steps of reasoning</li>
+              <li>Can validate its own work</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Future Directions</h2>
+        <p>The field of Large Language Models is rapidly evolving. Some promising research directions include:</p>
+        
+        <div class="grid">
+          <div class="card" v-for="(direction, index) in futureDirections" :key="index">
+            <h3>{{ direction.name }}</h3>
+            <p>{{ direction.description }}</p>
+          </div>
+        </div>
+        
+        <div class="note" style="margin-top: 1rem;">
+          <h3>Key Skills for LLM Engineering</h3>
+          <p>To work effectively with LLMs as a programmer, focus on:</p>
+          <ul>
+            <li>Prompt engineering and understanding model capabilities</li>
+            <li>Knowledge of vector databases and retrieval systems</li>
+            <li>Efficient model serving and optimization techniques</li>
+            <li>Evaluation methodologies for LLM outputs</li>
+            <li>Tool integration and agent-based architectures</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script type="text/x-template" id="resources-template">
+    <div>
+      <h1>Resources and Further Learning</h1>
+      
+      <div class="card">
+        <h2>Recommended Resources</h2>
+        <p>To deepen your understanding of LLMs, consider exploring these resources:</p>
+        
+        <div class="grid">
+          <div class="card">
+            <h3>Research Papers</h3>
+            <ul>
+              <li>"Attention Is All You Need" (Vaswani et al., 2017)</li>
+              <li>"Language Models are Few-Shot Learners" (Brown et al., 2020)</li>
+              <li>"Training language models to follow instructions" (Ouyang et al., 2022)</li>
+              <li>"Scaling Laws for Neural Language Models" (Kaplan et al., 2020)</li>
+              <li>"Emergent Abilities of Large Language Models" (Wei et al., 2022)</li>
+            </ul>
+          </div>
+          
+          <div class="card">
+            <h3>Books and Courses</h3>
+            <ul>
+              <li>"Deep Learning" (Goodfellow, Bengio, Courville)</li>
+              <li>"Speech and Language Processing" (Jurafsky & Martin)</li>
+              <li>Stanford CS324: Large Language Models</li>
+              <li>CMU Neural Nets for NLP course</li>
+              <li>Fast.ai's "Practical Deep Learning for Coders"</li>
+            </ul>
+          </div>
+          
+          <div class="card">
+            <h3>Open-Source Projects</h3>
+            <ul>
+              <li>Hugging Face Transformers</li>
+              <li>LangChain</li>
+              <li>LlamaIndex</li>
+              <li>Ollama</li>
+              <li>MLX</li>
+            </ul>
+          </div>
+          
+          <div class="card">
+            <h3>Libraries and Tools</h3>
+            <ul>
+              <li>PyTorch</li>
+              <li>TensorFlow</li>
+              <li>JAX</li>
+              <li>ONNX Runtime</li>
+              <li>LangSmith</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Practical Next Steps</h2>
+        <p>To apply what you've learned and continue developing your skills:</p>
+        
+        <ol>
+          <li><strong>Experiment with APIs</strong>: Use OpenAI, Anthropic, or other LLM APIs to build simple applications</li>
+          <li><strong>Fine-tune a model</strong>: Try fine-tuning a smaller open-source model on a specific task</li>
+          <li><strong>Build a RAG system</strong>: Implement a retrieval-augmented generation system with your own documents</li>
+          <li><strong>Join competitions</strong>: Participate in NLP competitions on platforms like Kaggle</li>
+          <li><strong>Contribute to open source</strong>: Help improve libraries like LangChain, LlamaIndex, or other LLM tools</li>
+        </ol>
+        
+        <div class="tip">
+          <h3>Learning Roadmap</h3>
+          <p>A suggested progression for deepening your LLM expertise:</p>
+          <ol>
+            <li>Master prompt engineering with existing models</li>
+            <li>Learn to evaluate and benchmark model performance</li>
+            <li>Build applications that integrate LLMs with other systems</li>
+            <li>Understand fine-tuning and alignment techniques</li>
+            <li>Study the theory behind transformers and attention mechanisms</li>
+            <li>Experiment with optimizing models for production</li>
+          </ol>
+        </div>
+      </div>
+      
+      <div class="card">
+        <h2>Conclusion</h2>
+        <p>Large Language Models represent a fundamental shift in how we build AI systems and applications. By understanding their capabilities, limitations, and how to effectively work with them, you can leverage these powerful tools to solve complex problems.</p>
+        
+        <p>The field is rapidly evolving, with new research, techniques, and applications emerging constantly. Staying curious and continuing to experiment is the best way to keep up with this exciting technology.</p>
+        
+        <div class="note">
+          <p>This interactive guide has introduced you to the core concepts of LLMs. For any questions or to explore specific topics further, refer to the resources provided or continue your learning journey with hands-on experimentation.</p>
+        </div>
+      </div>
+    </div>
+  </script>
+
+  <script>
+    const { createApp, ref, reactive, onMounted, computed } = Vue;
+    
+    // Introduction Component
+    const IntroductionComponent = {
+      template: '#intro-template',
+      data() {
+        return {
+          showEvolution: false
+        };
+      },
+      methods: {
+        toggleEvolution() {
+          this.showEvolution = !this.showEvolution;
+        }
+      },
+      mounted() {
+        // Create scaling visualization
+        const width = 500;
+        const height = 300;
+        const margin = { top: 20, right: 30, bottom: 40, left: 50 };
+        
+        const svg = d3.select(this.$refs.scalingVisualization)
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .attr("viewBox", `0 0 ${width} ${height}`);
+        
+        const modelData = [
+          { year: 2018, name: "GPT-1", params: 0.117 },
+          { year: 2019, name: "GPT-2", params: 1.5 },
+          { year: 2020, name: "GPT-3", params: 175 },
+          { year: 2022, name: "GPT-3.5", params: 350 },
+          { year: 2023, name: "GPT-4", params: 1000 },
+          { year: 2023.5, name: "Claude", params: 800 },
+          { year: 2023.7, name: "Llama 2", params: 70 },
+          { year: 2024, name: "Future", params: 1500 }
+        ];
+        
+        const x = d3.scaleLinear()
+          .domain([2018, 2024])
+          .range([margin.left, width - margin.right]);
+        
+        const y = d3.scaleLog()
+          .domain([0.1, 2000])
+          .range([height - margin.bottom, margin.top]);
+        
+        // Add X axis
+        svg.append("g")
+          .attr("transform", `translate(0,${height - margin.bottom})`)
+          .call(d3.axisBottom(x).tickFormat(d3.format("d")));
+        
+        // Add Y axis
+        svg.append("g")
+          .attr("transform", `translate(${margin.left},0)`)
+          .call(d3.axisLeft(y).tickValues([0.1, 1, 10, 100, 1000]).tickFormat(d => d + "B"));
+        
+        // Add X axis label
+        svg.append("text")
+          .attr("text-anchor", "middle")
+          .attr("x", width / 2)
+          .attr("y", height - 5)
+          .text("Year");
+        
+        // Add Y axis label
+        svg.append("text")
+          .attr("text-anchor", "middle")
+          .attr("transform", "rotate(-90)")
+          .attr("y", margin.left / 3)
+          .attr("x", -height / 2)
+          .text("Parameters");
+        
+        // Add the line
+        svg.append("path")
+          .datum(modelData)
+          .attr("fill", "none")
+          .attr("stroke", "#3498db")
+          .attr("stroke-width", 2.5)
+          .attr("d", d3.line()
+            .x(d => x(d.year))
+            .y(d => y(d.params))
+          );
+        
+        // Add the points
+        svg.selectAll("circle")
+          .data(modelData)
+          .join("circle")
+          .attr("cx", d => x(d.year))
+          .attr("cy", d => y(d.params))
+          .attr("r", 5)
+          .attr("fill", "#3498db");
+        
+        // Add labels
+        svg.selectAll("text.label")
+          .data(modelData.filter(d => d.year <= 2023.7)) // Skip "Future" label
+          .join("text")
+          .attr("class", "label")
+          .attr("x", d => x(d.year))
+          .attr("y", d => y(d.params) - 10)
+          .attr("text-anchor", "middle")
+          .attr("font-size", "12px")
+          .text(d => d.name);
+      }
+    };
+    
+    // Architecture Component
+    const ArchitectureComponent = {
+      template: '#architecture-template',
+      data() {
+        return {
+          attentionTab: 'concept',
+          positionTab: 'concept',
+          selectedToken: 0,
+          sentenceTokens: ["The", "quick", "brown", "fox", "jumps", "over"],
+          attentionValues: [
+            [0.7, 0.2, 0.05, 0.02, 0.02, 0.01], // Attention for "The"
+            [0.15, 0.6, 0.1, 0.05, 0.05, 0.05], // Attention for "quick"
+            [0.1, 0.1, 0.6, 0.1, 0.05, 0.05],   // Attention for "brown"
+            [0.05, 0.05, 0.1, 0.6, 0.15, 0.05], // Attention for "fox"
+            [0.02, 0.05, 0.03, 0.2, 0.6, 0.1],  // Attention for "jumps"
+            [0.05, 0.05, 0.05, 0.05, 0.1, 0.7]   // Attention for "over"
+          ]
+        };
+      },
+      mounted() {
+        // Draw attention matrix
+        const drawAttentionMatrix = () => {
+          const svg = d3.select(this.$refs.attentionMatrix);
+          svg.selectAll("*").remove();
+          
+          const width = 400;
+          const height = 300;
+          const margin = { top: 50, right: 50, bottom: 100, left: 100 };
+          const cellSize = Math.min(
+            (width - margin.left - margin.right) / this.sentenceTokens.length,
+            (height - margin.top - margin.bottom) / this.sentenceTokens.length
+          );
+          
+          // Draw cells
+          this.sentenceTokens.forEach((_, i) => {
+            this.sentenceTokens.forEach((_, j) => {
+              svg.append("rect")
+                .attr("x", margin.left + j * cellSize)
+                .attr("y", margin.top + i * cellSize)
+                .attr("width", cellSize)
+                .attr("height", cellSize)
+                .attr("class", "attention-cell")
+                .attr("fill", d3.interpolateBlues(this.attentionValues[i][j]));
+            });
+          });
+          
+          // Add row labels
+          this.sentenceTokens.forEach((token, i) => {
+            svg.append("text")
+              .attr("x", margin.left - 10)
+              .attr("y", margin.top + i * cellSize + cellSize / 2)
+              .attr("text-anchor", "end")
+              .attr("dominant-baseline", "middle")
+              .text(token);
+          });
+          
+          // Add column labels
+          this.sentenceTokens.forEach((token, j) => {
+            svg.append("text")
+              .attr("x", margin.left + j * cellSize + cellSize / 2)
+              .attr("y", margin.top - 10)
+              .attr("text-anchor", "middle")
+              .text(token);
+          });
+          
+          // Add axis labels
+          svg.append("text")
+            .attr("x", margin.left - 50)
+            .attr("y", margin.top + (this.sentenceTokens.length * cellSize) / 2)
+            .attr("text-anchor", "middle")
+            .attr("transform", `rotate(-90, ${margin.left - 50}, ${margin.top + (this.sentenceTokens.length * cellSize) / 2})`)
+            .text("Query Token");
+          
+          svg.append("text")
+            .attr("x", margin.left + (this.sentenceTokens.length * cellSize) / 2)
+            .attr("y", margin.top - 30)
+            .attr("text-anchor", "middle")
+            .text("Key Token");
+        };
+        
+        // Draw position embeddings
+        const drawPositionEmbeddings = () => {
+          const svg = d3.select(this.$refs.positionEmbeddings);
+          svg.selectAll("*").remove();
+          
+          const width = 600;
+          const height = 300;
+          const margin = { top: 20, right: 20, bottom: 50, left: 50 };
+          
+          const numPositions = 10;
+          const numDimensions = 6;
+          
+          // Generate sinusoidal position embeddings
+          const embeddings = [];
+          for (let pos = 0; pos < numPositions; pos++) {
+            const posEmbedding = [];
+            for (let dim = 0; dim < numDimensions; dim++) {
+              if (dim % 2 === 0) {
+                posEmbedding.push(Math.sin(pos / Math.pow(10000, dim / numDimensions)));
+              } else {
+                posEmbedding.push(Math.cos(pos / Math.pow(10000, (dim - 1) / numDimensions)));
+              }
+            }
+            embeddings.push(posEmbedding);
+          }
+          
+          // Scale
+          const x = d3.scaleLinear()
+            .domain([0, numDimensions - 1])
+            .range([margin.left, width - margin.right]);
+          
+          const y = d3.scaleLinear()
+            .domain([-1, 1])
+            .range([height - margin.bottom, margin.top]);
+          
+          // Add X axis
+          svg.append("g")
+            .attr("transform", `translate(0,${height - margin.bottom})`)
+            .call(d3.axisBottom(x).ticks(numDimensions));
+          
+          // Add Y axis
+          svg.append("g")
+            .attr("transform", `translate(${margin.left},0)`)
+            .call(d3.axisLeft(y));
+          
+          // Add lines
+          const line = d3.line()
+            .x((d, i) => x(i))
+            .y(d => y(d));
+          
+          const colors = d3.schemeCategory10;
+          
+          embeddings.forEach((embedding, i) => {
+            svg.append("path")
+              .datum(embedding)
+              .attr("fill", "none")
+              .attr("stroke", colors[i % colors.length])
+              .attr("stroke-width", 2)
+              .attr("d", line);
+            
+            // Add a dot at the first point for the legend
+            svg.append("circle")
+              .attr("cx", width - margin.right + 10)
+              .attr("cy", margin.top + 15 + i * 20)
+              .attr("r", 5)
+              .attr("fill", colors[i % colors.length]);
+            
+            // Add position label
+            svg.append("text")
+              .attr("x", width - margin.right + 20)
+              .attr("y", margin.top + 15 + i * 20)
+              .attr("dominant-baseline", "middle")
+              .text(`Pos ${i}`);
+          });
+          
+          // Add axis labels
+          svg.append("text")
+            .attr("x", width / 2)
+            .attr("y", height - 5)
+            .attr("text-anchor", "middle")
+            .text("Embedding Dimension");
+          
+          svg.append("text")
+            .attr("transform", "rotate(-90)")
+            .attr("x", -height / 2)
+            .attr("y", 15)
+            .attr("text-anchor", "middle")
+            .text("Value");
+        };
+        
+        drawAttentionMatrix();
+        drawPositionEmbeddings();
+      }
+    };
+    
+    // Training Component
+    const TrainingComponent = {
+      template: '#training-template',
+      data() {
+        return {
+          showEmergent: false,
+          tokensToShow: 8,
+          exampleText: "The quick brown fox jumps over the lazy dog while the cat watches from a safe distance on the fence"
+        };
+      },
+      methods: {
+        toggleEmergent() {
+          this.showEmergent = !this.showEmergent;
+        }
+      },
+      mounted() {
+        // Create scaling laws chart
+        const width = 500;
+        const height = 300;
+        const margin = { top: 20, right: 30, bottom: 50, left: 60 };
+        
+        const svg = d3.select(this.$refs.scalingLawsChart)
+          .append("svg")
+          .attr("width", width)
+          .attr("height", height)
+          .attr("viewBox", `0 0 ${width} ${height}`);
+        
+        // Sample data for scaling law visualization
+        const data = [
+          { params: 0.1, performance: 0.4 },
+          { params: 0.3, performance: 0.5 },
+          { params: 1, performance: 0.6 },
+          { params: 3, performance: 0.65 },
+          { params: 10, performance: 0.7 },
+          { params: 30, performance: 0.75 },
+          { params: 100, performance: 0.8 },
+          { params: 300, performance: 0.85 },
+          { params: 1000, performance: 0.9 }
+        ];
+        
+        // Scales
+        const x = d3.scaleLog()
+          .domain([0.1, 1000])
+          .range([margin.left, width - margin.right]);
+        
+        const y = d3.scaleLinear()
+          .domain([0.3, 1])
+          .range([height - margin.bottom, margin.top]);
+        
+        // Add X axis
+        svg.append("g")
+          .attr("transform", `translate(0,${height - margin.bottom})`)
+          .call(d3.axisBottom(x).tickValues([0.1, 1, 10, 100, 1000]).tickFormat(d => d + "B"));
+        
+        // Add Y axis
+        svg.append("g")
+          .attr("transform", `translate(${margin.left},0)`)
+          .call(d3.axisLeft(y).tickFormat(d3.format(".0%")));
+        
+        // Add X axis label
+        svg.append("text")
+          .attr("text-anchor", "middle")
+          .attr("x", width / 2)
+          .attr("y", height - 5)
+          .text("Model Size (Parameters)");
+        
+        // Add Y axis label
+        svg.append("text")
+          .attr("text-anchor", "middle")
+          .attr("transform", "rotate(-90)")
+          .attr("y", margin.left / 3)
+          .attr("x", -height / 2)
+          .text("Performance");
+        
+        // Add the line
+        svg.append("path")
+          .datum(data)
+          .attr("fill", "none")
+          .attr("stroke", "#e74c3c")
+          .attr("stroke-width", 2.5)
+          .attr("d", d3.line()
+            .x(d => x(d.params))
+            .y(d => y(d.performance))
+          );
+        
+        // Add the points
+        svg.selectAll("circle")
+          .data(data)
+          .join("circle")
+          .attr("cx", d => x(d.params))
+          .attr("cy", d => y(d.performance))
+          .attr("r", 4)
+          .attr("fill", "#e74c3c");
+      }
+    };
+    
+    // Prompting Component
+    const PromptingComponent = {
+      template: '#prompting-template',
+      data() {
+        return {
+          promptingTab: 'basic',
+          showTokenization: false,
+          tokenizationExample: 0,
+          userPrompt: "",
+          selectedTemplate: null,
+          basicTechniques: [
+            {
+              name: "Role Prompting",
+              description: "Assign a specific role to the LLM to shape its response style and expertise.",
+              example: "You are an expert Python programmer specializing in data analysis. Explain how to optimize this pandas code: [code]"
+            },
+            {
+              name: "Few-Shot Learning",
+              description: "Provide examples of the desired input-output pattern.",
+              example: "Translate English to French:\n\nEnglish: Hello\nFrench: Bonjour\n\nEnglish: How are you?\nFrench: Comment ça va?\n\nEnglish: Where is the library?"
+            },
+            {
+              name: "Task Decomposition",
+              description: "Break complex tasks into simpler subtasks.",
+              example: "To analyze this customer feedback data:\n1. First, categorize each comment by topic\n2. Then, determine sentiment for each comment\n3. Finally, summarize the main themes and sentiment by topic"
+            }
+          ],
+          advancedTechniques: [
+            {
+              name: "Chain-of-Thought",
+              description: "Guide the model to show its reasoning step by step.",
+              example: "Problem: A store has 25 apples. They sell 60% of them, and then buy 15 more. How many apples do they have now?\n\nLet's think through this step by step:"
+            },
+            {
+              name: "Tree of Thoughts",
+              description: "Explore multiple reasoning paths for complex problems.",
+              example: "Let's solve this problem by considering three different approaches, evaluating each one, and then selecting the best solution."
+            },
+            {
+              name: "Self-Consistency",
+              description: "Generate multiple solutions and find the most consistent answer.",
+              example: "Solve this problem 5 different ways, then determine which answer appears most frequently."
+            },
+            {
+              name: "ReAct (Reasoning + Acting)",
+              description: "Interleave reasoning steps with actions.",
+              example: "To answer this question, I'll:\n1. Think: What information do I need?\n2. Search: Look up relevant data\n3. Think: How does this information help?\n4. Calculate: Perform necessary calculations\n5. Conclude: Provide the final answer"
+            }
+          ],
+          promptTemplates: [
+            {
+              name: "Code Explanation",
+              template: "Explain the following code step by step, focusing on its purpose, key components, and how it works. Include suggestions for improvements:\n\n```python\n# Your code here\n```"
+            },
+            {
+              name: "Technical Interview",
+              template: "You are an experienced technical interviewer for a senior software engineering position. Ask me challenging questions about [TOPIC], evaluate my responses, and provide constructive feedback."
+            },
+            {
+              name: "Debugging Assistant",
+              template: "I'm getting the following error in my code. Help me understand what's causing it and how to fix it:\n\nError message: [ERROR]\n\nCode:\n```\n[CODE]\n```"
+            }
+          ]
+        };
+      },
+      methods: {
+        toggleTokenization() {
+          this.showTokenization = !this.showTokenization;
+        },
+        applyTemplate() {
+          if (this.selectedTemplate) {
+            this.userPrompt = this.selectedTemplate.template;
+          }
+        }
+      }
+    };
+    
+    // Applications Component
+    const ApplicationsComponent = {
+      template: '#applications-template',
+      data() {
+        return {
+          showLimitations: false,
+          applications: [
+            {
+              name: "Code Generation & Assistance",
+              description: "LLMs can generate code, explain existing code, suggest refactoring, and help with debugging.",
+              example: "// Generate an Express.js API endpoint for user authentication\n\napp.post('/api/login', async (req, res) => {\n  try {\n    const { email, password } = req.body;\n    // Validate input\n    // ... additional code generated by LLM\n  } catch (error) {\n    res.status(500).json({ error: error.message });\n  }\n});"
+            },
+            {
+              name: "Document Analysis & Processing",
+              description: "Extract information, summarize, categorize, and analyze documents at scale.",
+              example: "// Python code for a RAG system\nimport langchain\nfrom langchain.embeddings import OpenAIEmbeddings\nfrom langchain.vectorstores import Chroma\n\n# Initialize embeddings model\nembeddings = OpenAIEmbeddings()\n\n# Create vector store from documents\nvectorstore = Chroma.from_documents(documents, embeddings)"
+            },
+            {
+              name: "Conversational Interfaces",
+              description: "Create sophisticated chatbots and virtual assistants that can maintain context across conversations.",
+              example: "// Using LangChain.js for a memory-enabled chatbot\n\nimport { ConversationChain } from \"langchain/chains\";\nimport { ChatOpenAI } from \"langchain/chat_models\";\nimport { BufferMemory } from \"langchain/memory\";\n\nconst memory = new BufferMemory();\nconst model = new ChatOpenAI();\nconst chain = new ConversationChain({ llm: model, memory });"
+            }
+          ],
+          futureDirections: [
+            {
+              name: "Multimodal Models",
+              description: "Models that can process and generate multiple types of data (text, images, audio, video) together, enabling more comprehensive understanding and generation capabilities."
+            },
+            {
+              name: "Reasoning Improvements",
+              description: "Enhanced logical reasoning, mathematical capabilities, and consistency through specialized architectures and training techniques."
+            },
+            {
+              name: "Efficiency Innovations",
+              description: "Making models smaller, faster, and less resource-intensive while maintaining capabilities through techniques like distillation, pruning, and quantization."
+            },
+            {
+              name: "Long-Context Architectures",
+              description: "Models capable of processing much longer contexts (millions of tokens) through architectural innovations like recurrent memory, retrieval mechanisms, or more efficient attention patterns."
+            }
+          ]
+        };
+      },
+      methods: {
+        toggleLimitations() {
+          this.showLimitations = !this.showLimitations;
+        }
+      }
+    };
+    
+    // Resources Component
+    const ResourcesComponent = {
+      template: '#resources-template'
+    };
+    
+    // Main App
+    const app = createApp({
+      data() {
+        return {
+          activeSection: 0,
+          sections: [
+            { title: "Introduction", component: IntroductionComponent },
+            { title: "Architecture", component: ArchitectureComponent },
+            { title: "Training", component: TrainingComponent },
+            { title: "Prompting", component: PromptingComponent },
+            { title: "Applications", component: ApplicationsComponent },
+            { title: "Resources", component: ResourcesComponent }
+          ]
+        };
+      }
+    });
+    
+    app.mount('#app');
+  </script>
+</body>
+</html>
