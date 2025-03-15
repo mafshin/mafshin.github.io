@@ -1080,69 +1080,40 @@
                 onMounted(() => {
                     const initDatabase = async () => {
                         try {
-                            console.log("Initializing database...");
+                            console.log("Initializing database with localStorage...");
                             
-                            // Open Web SQL Database
-                            const db = window.openDatabase('timeTrackProDB', '1.0', 'Time Track Pro Database', 2 * 1024 * 1024);
+                            // Load data from localStorage
+                            const loadedUsers = localStorage.getItem('timeTrackProUsers');
+                            const loadedCategories = localStorage.getItem('timeTrackProCategories');
+                            const loadedEntries = localStorage.getItem('timeTrackProEntries');
                             
-                            // Check if data exists in WebSQL
-                            db.transaction(function(tx) {
-                                // Create tables if they don't exist
-                                tx.executeSql(
-                                    'CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, holidayAllocation REAL, sickLeaveAllocation REAL)',
-                                    [],
-                                    function() { console.log("Users table created or exists"); },
-                                    function(tx, error) { console.error("Error creating users table:", error); }
-                                );
+                            if (loadedUsers && loadedCategories && loadedEntries) {
+                                // Parse stored data
+                                users.value = JSON.parse(loadedUsers);
+                                categories.value = JSON.parse(loadedCategories);
+                                timeEntries.value = JSON.parse(loadedEntries);
                                 
-                                tx.executeSql(
-                                    'CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT, color TEXT, isDefault INTEGER, shortcut TEXT, type TEXT)',
-                                    [],
-                                    function() { console.log("Categories table created or exists"); },
-                                    function(tx, error) { console.error("Error creating categories table:", error); }
-                                );
+                                // Set default user
+                                if (users.value.length > 0) {
+                                    user.value = users.value[0];
+                                    userId.value = users.value[0].id;
+                                }
                                 
-                                tx.executeSql(
-                                    'CREATE TABLE IF NOT EXISTS time_entries (id INTEGER PRIMARY KEY, userId INTEGER, date TEXT, startTime TEXT, endTime TEXT, category INTEGER, type TEXT, notes TEXT)',
-                                    [],
-                                    function() { console.log("Time entries table created or exists"); },
-                                    function(tx, error) { console.error("Error creating time entries table:", error); }
-                                );
-                                
-                                // Check if data exists in users table
-                                tx.executeSql(
-                                    'SELECT COUNT(*) as count FROM users',
-                                    [],
-                                    function(tx, results) {
-                                        const count = results.rows.item(0).count;
-                                        if (count === 0) {
-                                            // No data, initialize with sample data
-                                            initSampleData(db);
-                                        } else {
-                                            // Data exists, load it
-                                            loadDataFromDB(db);
-                                        }
-                                    },
-                                    function(tx, error) {
-                                        console.error("Error checking users table:", error);
-                                        // If error, probably table doesn't exist yet, initialize with sample data
-                                        initSampleData(db);
-                                    }
-                                );
-                            });
-                            
-                            // Store database reference
-                            db.value = db;
+                                console.log("Data loaded from localStorage");
+                                loading.value = false;
+                            } else {
+                                // Initialize with sample data
+                                initSampleData();
+                            }
                         } catch (error) {
                             console.error("Database initialization error:", error);
                             // Fallback to sample data without persistence
-                            initSampleDataWithoutDB();
-                            loading.value = false;
+                            initSampleDataWithoutPersistence();
                         }
                     };
                     
-                    // Function to initialize sample data and store in DB
-                    const initSampleData = (db) => {
+                    // Function to initialize sample data and store in localStorage
+                    const initSampleData = () => {
                         console.log("Initializing sample data...");
                         
                         // Create sample data
@@ -1159,116 +1130,36 @@
                             { id: 5, name: 'Overtime', color: '#9C27B0', isDefault: false, shortcut: 'o', type: 'overtime' }
                         ];
                         
-                        // Insert sample data into DB
-                        db.transaction(function(tx) {
-                            // Insert users
-                            sampleUsers.forEach(user => {
-                                tx.executeSql(
-                                    'INSERT INTO users (id, name, email, holidayAllocation, sickLeaveAllocation) VALUES (?, ?, ?, ?, ?)',
-                                    [user.id, user.name, user.email, user.holidayAllocation, user.sickLeaveAllocation],
-                                    null,
-                                    (tx, error) => console.error("Error inserting user:", error)
-                                );
-                            });
-                            
-                            // Insert categories
-                            sampleCategories.forEach(category => {
-                                tx.executeSql(
-                                    'INSERT INTO categories (id, name, color, isDefault, shortcut, type) VALUES (?, ?, ?, ?, ?, ?)',
-                                    [category.id, category.name, category.color, category.isDefault ? 1 : 0, category.shortcut, category.type],
-                                    null,
-                                    (tx, error) => console.error("Error inserting category:", error)
-                                );
-                            });
-                            
-                            // Generate sample time entries
-                            const sampleTimeEntries = generateSampleEntries(sampleUsers, sampleCategories);
-                            
-                            // Insert time entries
-                            sampleTimeEntries.forEach(entry => {
-                                tx.executeSql(
-                                    'INSERT INTO time_entries (id, userId, date, startTime, endTime, category, type, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                                    [entry.id, entry.userId, entry.date, entry.startTime, entry.endTime, entry.category, entry.type, entry.notes],
-                                    null,
-                                    (tx, error) => console.error("Error inserting time entry:", error)
-                                );
-                            });
-                        }, 
-                        function(error) {
-                            console.error("Transaction error:", error);
-                        }, 
-                        function() {
-                            console.log("Transaction successful");
-                            // Load data from DB
-                            loadDataFromDB(db);
-                        });
+                        // Create sample time entries
+                        const sampleTimeEntries = generateSampleEntries(sampleUsers, sampleCategories);
+                        
+                        // Set data in state
+                        users.value = sampleUsers;
+                        categories.value = sampleCategories;
+                        timeEntries.value = sampleTimeEntries;
+                        user.value = sampleUsers[0]; // Set default user
+                        userId.value = sampleUsers[0].id;
+                        
+                        // Store in localStorage
+                        saveDataToLocalStorage();
+                        
+                        loading.value = false;
                     };
                     
-                    // Function to load data from DB
-                    const loadDataFromDB = (db) => {
-                        db.transaction(function(tx) {
-                            // Load users
-                            tx.executeSql(
-                                'SELECT * FROM users',
-                                [],
-                                function(tx, results) {
-                                    const loadedUsers = [];
-                                    for (let i = 0; i < results.rows.length; i++) {
-                                        loadedUsers.push(results.rows.item(i));
-                                    }
-                                    users.value = loadedUsers;
-                                    if (loadedUsers.length > 0) {
-                                        user.value = loadedUsers[0];
-                                        userId.value = loadedUsers[0].id;
-                                    }
-                                },
-                                function(tx, error) {
-                                    console.error("Error loading users:", error);
-                                }
-                            );
-                            
-                            // Load categories
-                            tx.executeSql(
-                                'SELECT * FROM categories',
-                                [],
-                                function(tx, results) {
-                                    const loadedCategories = [];
-                                    for (let i = 0; i < results.rows.length; i++) {
-                                        const cat = results.rows.item(i);
-                                        loadedCategories.push({
-                                            ...cat,
-                                            isDefault: cat.isDefault === 1
-                                        });
-                                    }
-                                    categories.value = loadedCategories;
-                                },
-                                function(tx, error) {
-                                    console.error("Error loading categories:", error);
-                                }
-                            );
-                            
-                            // Load time entries
-                            tx.executeSql(
-                                'SELECT * FROM time_entries',
-                                [],
-                                function(tx, results) {
-                                    const loadedEntries = [];
-                                    for (let i = 0; i < results.rows.length; i++) {
-                                        loadedEntries.push(results.rows.item(i));
-                                    }
-                                    timeEntries.value = loadedEntries;
-                                    loading.value = false;
-                                },
-                                function(tx, error) {
-                                    console.error("Error loading time entries:", error);
-                                    loading.value = false;
-                                }
-                            );
-                        });
+                    // Function to save all data to localStorage
+                    const saveDataToLocalStorage = () => {
+                        try {
+                            localStorage.setItem('timeTrackProUsers', JSON.stringify(users.value));
+                            localStorage.setItem('timeTrackProCategories', JSON.stringify(categories.value));
+                            localStorage.setItem('timeTrackProEntries', JSON.stringify(timeEntries.value));
+                            console.log('Data saved to localStorage');
+                        } catch (error) {
+                            console.error('Error saving to localStorage:', error);
+                        }
                     };
                     
-                    // Fallback function if Web SQL is not available
-                    const initSampleDataWithoutDB = () => {
+                    // Fallback function if localStorage is not available
+                    const initSampleDataWithoutPersistence = () => {
                         console.log("Initializing sample data without persistence...");
                         
                         // Create sample data
@@ -1292,7 +1183,32 @@
                         categories.value = sampleCategories;
                         timeEntries.value = sampleTimeEntries;
                         user.value = sampleUsers[0]; // Set default user
+                        userId.value = sampleUsers[0].id;
+                        loading.value = false;
                     };
+                    
+                    // Listen for storage events (when localStorage is updated in other tabs)
+                    window.addEventListener('storage', (event) => {
+                        // Check which data was updated
+                        if (event.key === 'timeTrackProEntries') {
+                            console.log('Entries updated in another tab, reloading...');
+                            timeEntries.value = JSON.parse(event.newValue);
+                        } else if (event.key === 'timeTrackProUsers') {
+                            console.log('Users updated in another tab, reloading...');
+                            users.value = JSON.parse(event.newValue);
+                        } else if (event.key === 'timeTrackProCategories') {
+                            console.log('Categories updated in another tab, reloading...');
+                            categories.value = JSON.parse(event.newValue);
+                        }
+                    });
+
+                    // Expose the save function globally so we can watch for changes and save
+                    window.saveToLocalStorage = saveDataToLocalStorage;
+
+                    // Watch for changes to data and save to localStorage
+                    watch(timeEntries, () => {
+                        saveDataToLocalStorage();
+                    }, { deep: true });
 
                     initDatabase();
 
@@ -1535,17 +1451,7 @@
                     // Add to local state
                     timeEntries.value.push(entry);
                     
-                    // Save to database
-                    if (db.value) {
-                        db.value.transaction(function(tx) {
-                            tx.executeSql(
-                                'INSERT INTO time_entries (id, userId, date, startTime, endTime, category, type, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-                                [entry.id, entry.userId, entry.date, entry.startTime, entry.endTime, entry.category, entry.type, entry.notes],
-                                function() { console.log("Entry added to database"); },
-                                function(tx, error) { console.error("Error adding entry to database:", error); }
-                            );
-                        });
-                    }
+                    // Data will be saved via the watch handler
                     
                     closeModal();
                 };
@@ -1565,7 +1471,7 @@
                 const handleUpdateEntry = () => {
                     timeEntries.value = timeEntries.value.map(entry => {
                         if (entry.id === editingEntry.value.id) {
-                            const updatedEntry = {
+                            return {
                                 ...entry,
                                 date: newEntry.date,
                                 startTime: newEntry.startTime,
@@ -1574,23 +1480,11 @@
                                 type: newEntry.type,
                                 notes: newEntry.notes
                             };
-                            
-                            // Update in database
-                            if (db.value) {
-                                db.value.transaction(function(tx) {
-                                    tx.executeSql(
-                                        'UPDATE time_entries SET date=?, startTime=?, endTime=?, category=?, type=?, notes=? WHERE id=?',
-                                        [updatedEntry.date, updatedEntry.startTime, updatedEntry.endTime, updatedEntry.category, updatedEntry.type, updatedEntry.notes, updatedEntry.id],
-                                        function() { console.log("Entry updated in database"); },
-                                        function(tx, error) { console.error("Error updating entry in database:", error); }
-                                    );
-                                });
-                            }
-                            
-                            return updatedEntry;
                         }
                         return entry;
                     });
+                    
+                    // Data will be saved via the watch handler
                     
                     closeModal();
                 };
@@ -1600,17 +1494,7 @@
                         // Remove from local state
                         timeEntries.value = timeEntries.value.filter(entry => entry.id !== id);
                         
-                        // Remove from database
-                        if (db.value) {
-                            db.value.transaction(function(tx) {
-                                tx.executeSql(
-                                    'DELETE FROM time_entries WHERE id=?',
-                                    [id],
-                                    function() { console.log("Entry deleted from database"); },
-                                    function(tx, error) { console.error("Error deleting entry from database:", error); }
-                                );
-                            });
-                        }
+                        // Data will be saved via the watch handler
                     }
                 };
 
