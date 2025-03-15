@@ -1,0 +1,1758 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Time Track Pro</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.47/vue.global.prod.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lodash/4.17.21/lodash.min.js" integrity="sha512-WFN04846sdKMIP5LKNphMaWzU7YpMyCU245etK3g/2ARYbPK9Ub18eG+ljU96qKRCWh+quCY7yefSmlkQw1ANQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <style>
+        .modal-enter-active, .modal-leave-active {
+            transition: opacity 0.3s;
+        }
+        .modal-enter-from, .modal-leave-to {
+            opacity: 0;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app">
+        <!-- Loading State -->
+        <div v-if="loading" class="flex items-center justify-center min-h-screen bg-gray-100">
+            <div class="text-center">
+                <div class="text-2xl font-semibold mb-4">Loading Time Track Pro...</div>
+                <div class="h-2 w-64 bg-gray-200 rounded-full overflow-hidden">
+                    <div class="h-full bg-blue-500 rounded-full animate-pulse"></div>
+                </div>
+            </div>
+        </div>
+
+        <div v-else class="min-h-screen bg-gray-50">
+            <!-- Header -->
+            <header class="bg-white shadow-sm">
+                <div class="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8 flex justify-between items-center">
+                    <h1 class="text-2xl font-bold text-gray-900 flex items-center">
+                        <!-- Clock icon -->
+                        <svg class="h-8 w-8 mr-2 text-blue-500" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <polyline points="12 6 12 12 16 14"></polyline>
+                        </svg>
+                        Time Track Pro
+                    </h1>
+                    
+                    <div class="flex items-center space-x-2">
+                        <div class="relative">
+                            <select
+                                class="appearance-none bg-white border border-gray-300 rounded-md pl-3 pr-10 py-2 text-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                v-model="userId"
+                                @change="changeUser"
+                            >
+                                <option v-for="u in users" :key="u.id" :value="u.id">{{ u.name }}</option>
+                            </select>
+                            <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-2 text-gray-700">
+                                <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </div>
+                        </div>
+                        
+                        <button
+                            class="inline-flex items-center p-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            @click="showAddModal = true"
+                            title="Add Time Entry"
+                        >
+                            <!-- Plus icon -->
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="5" x2="12" y2="19"></line>
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </header>
+            
+            <!-- Navigation -->
+            <nav class="bg-white shadow-sm border-t">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                    <div class="flex space-x-8">
+                        <button
+                            class="px-3 py-4 text-sm font-medium"
+                            :class="activeTab === 'dashboard' ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'"
+                            @click="activeTab = 'dashboard'"
+                        >
+                            <div class="flex items-center">
+                                <!-- Home icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                                </svg>
+                                Dashboard
+                            </div>
+                        </button>
+                        
+                        <button
+                            class="px-3 py-4 text-sm font-medium"
+                            :class="activeTab === 'timesheet' ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'"
+                            @click="activeTab = 'timesheet'"
+                        >
+                            <div class="flex items-center">
+                                <!-- Clock icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <polyline points="12 6 12 12 16 14"></polyline>
+                                </svg>
+                                Timesheet
+                            </div>
+                        </button>
+                        
+                        <button
+                            class="px-3 py-4 text-sm font-medium"
+                            :class="activeTab === 'calendar' ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'"
+                            @click="activeTab = 'calendar'"
+                        >
+                            <div class="flex items-center">
+                                <!-- Calendar icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                </svg>
+                                Calendar
+                            </div>
+                        </button>
+                        
+                        <button
+                            class="px-3 py-4 text-sm font-medium"
+                            :class="activeTab === 'reports' ? 'text-blue-600 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-700'"
+                            @click="activeTab = 'reports'"
+                        >
+                            <div class="flex items-center">
+                                <!-- Chart icon -->
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <line x1="18" y1="20" x2="18" y2="10"></line>
+                                    <line x1="12" y1="20" x2="12" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                                </svg>
+                                Reports
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </nav>
+            
+            <!-- Main content -->
+            <main class="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+                <!-- Dashboard -->
+                <div v-if="activeTab === 'dashboard'" class="space-y-6">
+                    <div class="grid grid-cols-1 gap-6 sm:grid-cols-3 lg:grid-cols-3">
+                        <!-- Holiday Statistics -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 bg-blue-500 rounded-md p-3">
+                                        <!-- Calendar icon -->
+                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-white" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="16" y1="2" x2="16" y2="6"></line>
+                                            <line x1="8" y1="2" x2="8" y2="6"></line>
+                                            <line x1="3" y1="10" x2="21" y2="10"></line>
+                                        </svg>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dl>
+                                            <dt class="text-sm font-medium text-gray-500 truncate">Holiday Hours Left</dt>
+                                            <dd class="flex items-baseline">
+                                                <div class="text-2xl font-semibold text-gray-900">
+                                                    {{ stats.remainingHolidayHours?.toFixed(1) || 0 }}
+                                                </div>
+                                                <div class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
+                                                    <span class="sr-only">of</span>
+                                                    {{ user?.holidayAllocation || 0 }} total
+                                                </div>
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Sick Leave Statistics -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 bg-red-500 rounded-md p-3">
+                                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dl>
+                                            <dt class="text-sm font-medium text-gray-500 truncate">Sick Leave Hours Used</dt>
+                                            <dd class="flex items-baseline">
+                                                <div class="text-2xl font-semibold text-gray-900">
+                                                    {{ stats.totalSickHours?.toFixed(1) || 0 }}
+                                                </div>
+                                                <div class="ml-2 flex items-baseline text-sm font-semibold text-red-600">
+                                                    <span class="sr-only">of</span>
+                                                    {{ user?.sickLeaveAllocation || 0 }} total
+                                                </div>
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Remote Work Statistics -->
+                        <div class="bg-white overflow-hidden shadow rounded-lg">
+                            <div class="px-4 py-5 sm:p-6">
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 bg-green-500 rounded-md p-3">
+                                        <svg class="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                        </svg>
+                                    </div>
+                                    <div class="ml-5 w-0 flex-1">
+                                        <dl>
+                                            <dt class="text-sm font-medium text-gray-500 truncate">Remote Work Hours</dt>
+                                            <dd class="flex items-baseline">
+                                                <div class="text-2xl font-semibold text-gray-900">
+                                                    {{ stats.totalRemoteHours?.toFixed(1) || 0 }}
+                                                </div>
+                                                <div class="ml-2 flex items-baseline text-sm font-semibold text-green-600">
+                                                    This Year
+                                                </div>
+                                            </dd>
+                                        </dl>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Quick Actions in their own row -->
+                    <div class="bg-white overflow-hidden shadow rounded-lg">
+                        <div class="px-4 py-5 sm:p-6">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Quick Actions</h3>
+                            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+                                <button
+                                    v-for="category in categories"
+                                    :key="category.id"
+                                    class="flex flex-col items-center justify-center p-2 border rounded-lg shadow-sm hover:shadow-md transition-all duration-200"
+                                    :style="{
+                                        backgroundColor: `${category.color}15`,
+                                        borderColor: category.color,
+                                    }"
+                                    @click="startNewEntry(category.type)"
+                                >
+                                    <div class="rounded-full p-2 mb-1" :style="{backgroundColor: category.color}">
+                                        <div class="text-white">
+                                            <!-- Icons based on category type -->
+                                            <svg v-if="category.type === 'work'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                            </svg>
+                                            <svg v-else-if="category.type === 'remote'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                            </svg>
+                                            <svg v-else-if="category.type === 'sick'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <svg v-else-if="category.type === 'holiday'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                            </svg>
+                                            <svg v-else-if="category.type === 'overtime'" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                            </svg>
+                                            <svg v-else class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                    <span class="font-medium text-xs text-gray-700">{{ category.name }}</span>
+                                    <span class="text-xs text-gray-500 mt-0.5">Alt+{{ category.shortcut }}</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Upcoming Holidays -->
+                    <div class="bg-white shadow rounded-lg overflow-hidden">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Upcoming Holidays</h3>
+                        </div>
+                        <div class="divide-y divide-gray-200">
+                            <div v-if="upcomingHolidays.length === 0" class="px-4 py-5 sm:px-6 text-gray-500 italic">No upcoming holidays</div>
+                            <div v-else v-for="entry in upcomingHolidays" :key="entry.id" class="px-4 py-4 sm:px-6 flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <div class="w-2 h-2 rounded-full mr-3" style="background-color: #FF9800"></div>
+                                    <span class="font-medium text-gray-900">{{ formatDateFull(entry.date) }}</span>
+                                </div>
+                                <div class="text-sm text-gray-500">
+                                    {{ calculateHours(entry.startTime, entry.endTime) }} hours
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Working Hours Chart -->
+                    <div class="bg-white shadow rounded-lg overflow-hidden">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Working Hours</h3>
+                            <div class="flex items-center space-x-2">
+                                <button
+                                    @click="handlePreviousMonth"
+                                    class="p-1 rounded-full hover:bg-gray-100"
+                                >
+                                    <!-- Left chevron -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="15 18 9 12 15 6"></polyline>
+                                    </svg>
+                                </button>
+                                <span class="text-sm font-medium text-gray-600">
+                                    {{ formatMonth(dateRange.start) }}
+                                </span>
+                                <button
+                                    @click="handleNextMonth"
+                                    class="p-1 rounded-full hover:bg-gray-100"
+                                >
+                                    <!-- Right chevron -->
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                        <polyline points="9 18 15 12 9 6"></polyline>
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="px-4 py-5 sm:p-6">
+                            <div class="h-64">
+                                <div class="flex h-full">
+                                    <div v-for="(label, index) in chartData.labels" :key="index" class="flex flex-col items-center flex-1">
+                                        <div class="flex-1 w-full px-1 flex items-end">
+                                            <div 
+                                                class="w-full bg-green-500 rounded-t"
+                                                :style="{ height: `${(chartData.datasets[0].data[index] / 10) * 100}%` }"
+                                            ></div>
+                                        </div>
+                                        <div class="text-xs text-gray-500 mt-1 truncate w-full text-center">
+                                            {{ label }}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Timesheet -->
+                <div v-if="activeTab === 'timesheet'" class="bg-white shadow rounded-lg overflow-hidden">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">Timesheet</h3>
+                        <div class="flex items-center space-x-2">
+                            <button
+                                @click="handlePreviousMonth"
+                                class="p-1 rounded-full hover:bg-gray-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <span class="text-sm font-medium text-gray-600">
+                                {{ formatMonth(dateRange.start) }}
+                            </span>
+                            <button
+                                @click="handleNextMonth"
+                                class="p-1 rounded-full hover:bg-gray-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">End</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hours</th>
+                                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</th>
+                                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                <tr v-if="filteredEntries.length === 0">
+                                    <td colspan="7" class="px-6 py-4 text-center text-sm text-gray-500">
+                                        No time entries for this period
+                                    </td>
+                                </tr>
+                                <tr v-else v-for="entry in sortedEntries" :key="entry.id">
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                        {{ formatDateShort(entry.date) }}
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        <span class="inline-flex items-center">
+                                            <span 
+                                                class="w-2 h-2 rounded-full mr-1" 
+                                                :style="{backgroundColor: getCategoryColor(entry.category)}"
+                                            ></span>
+                                            {{ getCategoryName(entry.category) || entry.type }}
+                                        </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ entry.startTime }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ entry.endTime }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {{ calculateHours(entry.startTime, entry.endTime) }}
+                                    </td>
+                                    <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{{ entry.notes }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                        <button
+                                            @click="handleEditEntry(entry)"
+                                            class="text-blue-600 hover:text-blue-900 mr-4"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            @click="handleDeleteEntry(entry.id)"
+                                            class="text-red-600 hover:text-red-900"
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                
+                <!-- Calendar View -->
+                <div v-if="activeTab === 'calendar'" class="bg-white shadow rounded-lg">
+                    <div class="px-4 py-5 sm:px-6 border-b border-gray-200 flex justify-between items-center">
+                        <h3 class="text-lg font-medium leading-6 text-gray-900">Calendar View</h3>
+                        <div class="flex items-center space-x-2">
+                            <button
+                                @click="handlePreviousMonth"
+                                class="p-1 rounded-full hover:bg-gray-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="15 18 9 12 15 6"></polyline>
+                                </svg>
+                            </button>
+                            <span class="text-sm font-medium text-gray-600">
+                                {{ formatMonth(dateRange.start) }}
+                            </span>
+                            <button
+                                @click="handleNextMonth"
+                                class="p-1 rounded-full hover:bg-gray-100"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="9 18 15 12 9 6"></polyline>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                    <div class="p-4">
+                        <div class="grid grid-cols-7 gap-px bg-gray-200 border rounded">
+                            <div v-for="day in ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']" :key="day" class="bg-gray-50 p-2 text-center text-sm font-medium text-gray-500">
+                                {{ day }}
+                            </div>
+                            
+                            <!-- Calendar empty cells for days before the first day of the month -->
+                            <div 
+                                v-for="i in startingDayOfWeek" 
+                                :key="'empty-start-' + i" 
+                                class="bg-white p-2 h-24 text-center text-sm text-gray-300"
+                            >
+                                &nbsp;
+                            </div>
+                            
+                            <!-- Calendar days of the month -->
+                            <div 
+                                v-for="day in daysInMonth" 
+                                :key="'day-' + day" 
+                                class="bg-white p-2 h-24 overflow-auto relative"
+                            >
+                                <div class="text-right font-semibold text-sm mb-1">
+                                    {{ day }}
+                                </div>
+                                
+                                <div v-if="getDayEntries(day).length > 0" class="space-y-1">
+                                    <div 
+                                        v-for="entry in getDayEntries(day)"
+                                        :key="entry.id" 
+                                        class="text-xs p-1 rounded truncate cursor-pointer"
+                                        :style="{backgroundColor: `${getCategoryColor(entry.category)}30`}"
+                                        @click="handleEditEntry(entry)"
+                                    >
+                                        {{ entry.startTime }}-{{ entry.endTime }} {{ getCategoryName(entry.category) || entry.type }}
+                                    </div>
+                                </div>
+                                <div v-else class="text-xs text-gray-400 italic">No entries</div>
+                            </div>
+                            
+                            <!-- Calendar empty cells for days after the last day of the month -->
+                            <div 
+                                v-for="i in emptyCellsToAdd" 
+                                :key="'empty-end-' + i" 
+                                class="bg-white p-2 h-24 text-center text-sm text-gray-300"
+                            >
+                                &nbsp;
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Reports View -->
+                <div v-if="activeTab === 'reports'" class="space-y-6">
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Reports</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                                <div class="border rounded-lg p-4">
+                                    <h4 class="text-base font-medium text-gray-900 mb-4">Time by Category</h4>
+                                    <div class="space-y-3">
+                                        <div v-for="category in categories" :key="category.id">
+                                            <div class="flex justify-between text-sm mb-1">
+                                                <span class="font-medium text-gray-700 flex items-center">
+                                                    <span class="w-3 h-3 rounded-full mr-2" :style="{backgroundColor: category.color}"></span>
+                                                    {{ category.name }}
+                                                </span>
+                                                <span class="text-gray-500">{{ getCategoryHours(category.id).toFixed(1) }} hours</span>
+                                            </div>
+                                            <div class="h-2 bg-gray-200 rounded-full overflow-hidden">
+                                                <div 
+                                                    class="h-full rounded-full" 
+                                                    :style="{
+                                                        width: `${getCategoryPercentage(category.id)}%`, 
+                                                        backgroundColor: category.color
+                                                    }"
+                                                ></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="border rounded-lg p-4">
+                                    <h4 class="text-base font-medium text-gray-900 mb-4">Working Hours Summary</h4>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-700 mb-1">Average Daily Hours</div>
+                                            <div class="text-3xl font-bold text-gray-900">
+                                                {{ calculateAverageDailyHours() }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-700 mb-1">Total Hours This Month</div>
+                                            <div class="text-3xl font-bold text-gray-900">
+                                                {{ calculateTotalMonthHours() }}
+                                            </div>
+                                        </div>
+                                        
+                                        <div>
+                                            <div class="text-sm font-medium text-gray-700 mb-1">Remote Work Percentage</div>
+                                            <div class="text-3xl font-bold text-gray-900">
+                                                {{ calculateRemotePercentage() }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Yearly Stacked Bar Chart -->
+                    <div class="bg-white shadow rounded-lg">
+                        <div class="px-4 py-5 sm:px-6 border-b border-gray-200">
+                            <h3 class="text-lg font-medium leading-6 text-gray-900">Yearly Overview by Category</h3>
+                        </div>
+                        <div class="p-6">
+                            <div class="h-96">
+                                <div v-if="yearlyChartData.labels.length > 0" class="w-full h-full">
+                                    <div class="flex flex-col h-full">
+                                        <div class="flex justify-between items-center mb-4">
+                                            <div class="text-sm font-medium text-gray-700">Hours by Month and Category - {{ new Date().getFullYear() }}</div>
+                                            <div class="flex flex-wrap justify-end space-x-4">
+                                                <div 
+                                                    v-for="category in categories" 
+                                                    :key="category.id" 
+                                                    class="flex items-center cursor-pointer p-1 rounded transition-all duration-150"
+                                                    :style="{
+                                                        opacity: activeCategories === null || activeCategories === category.id ? 1 : 0.5,
+                                                        background: activeCategories === category.id ? `${category.color}20` : 'transparent'
+                                                    }"
+                                                    @click="toggleCategoryFilter(category.id)"
+                                                >
+                                                    <div 
+                                                        class="w-3 h-3 rounded-full mr-1" 
+                                                        :style="{backgroundColor: category.color}"
+                                                    ></div>
+                                                    <span class="text-xs text-gray-600">{{ category.name }}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="flex-1 flex items-end">
+                                            <div class="mr-6 h-full flex flex-col justify-between">
+                                                <div 
+                                                    v-for="value in [150, 125, 100, 75, 50, 25, 0]" 
+                                                    :key="value" 
+                                                    class="text-xs text-gray-500"
+                                                >
+                                                    {{ value }}
+                                                </div>
+                                            </div>
+                                            <div class="flex-1 flex items-end space-x-2">
+                                                <div 
+                                                    v-for="(month, monthIndex) in yearlyChartData.labels" 
+                                                    :key="month" 
+                                                    class="flex-1 flex flex-col items-center"
+                                                >
+                                                    <div class="h-72 flex flex-col-reverse w-full">
+                                                        <template v-for="(dataset, i) in yearlyChartData.datasets">
+                                                            <div 
+                                                                v-if="dataset && dataset.data && dataset.data[monthIndex] > 0"
+                                                                :key="i"
+                                                                class="w-full rounded-t mx-px mb-px relative group transition-opacity duration-200"
+                                                                :style="{
+                                                                    height: `${(dataset.data[monthIndex] / 150) * 100}%`,
+                                                                    backgroundColor: dataset.backgroundColor || '#ccc',
+                                                                    opacity: isActiveCategory(dataset.categoryId) ? 1 : 0.3,
+                                                                    cursor: 'pointer'
+                                                                }"
+                                                                @click="toggleCategoryFilter(parseInt(dataset.categoryId))"
+                                                            >
+                                                                <!-- Tooltip on hover -->
+                                                                <div class="opacity-0 group-hover:opacity-100 absolute bottom-full mb-1 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded py-1 px-2 pointer-events-none whitespace-nowrap z-10">
+                                                                    <div class="text-center font-medium">{{ getCategoryName(parseInt(dataset.categoryId)) }}</div>
+                                                                    <div>{{ dataset.data[monthIndex].toFixed(1) }} hours</div>
+                                                                </div>
+                                                            </div>
+                                                        </template>
+                                                    </div>
+                                                    <div class="mt-2 text-xs text-gray-500">{{ month }}</div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div v-else class="flex items-center justify-center h-full text-gray-400 italic">
+                                    No data available for yearly chart
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            
+            <!-- Add/Edit Time Entry Modal -->
+            <div v-if="showAddModal" class="fixed z-10 inset-0 overflow-y-auto">
+                <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                    <div class="fixed inset-0 transition-opacity" aria-hidden="true">
+                        <div class="absolute inset-0 bg-gray-500 opacity-75"></div>
+                    </div>
+                    
+                    <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+                    
+                    <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
+                        <!-- Colored header based on selected category -->
+                        <div 
+                            class="px-6 py-4 border-b flex justify-between items-center" 
+                            :style="{
+                                backgroundColor: getSelectedCategoryColor(),
+                                color: 'white'
+                            }"
+                        >
+                            <div class="flex items-center">
+                                <!-- Icon for the category type -->
+                                <svg v-if="newEntry.type === 'work'" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                </svg>
+                                <svg v-else-if="newEntry.type === 'remote'" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                </svg>
+                                <svg v-else-if="newEntry.type === 'sick'" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <svg v-else-if="newEntry.type === 'holiday'" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                                <svg v-else-if="newEntry.type === 'overtime'" class="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <h3 class="text-lg font-medium">
+                                    {{ editingEntry ? 'Edit Time Entry' : 'Add Time Entry' }}: {{ getSelectedCategoryName() }}
+                                </h3>
+                            </div>
+                            <button 
+                                type="button" 
+                                class="rounded-full p-1 hover:bg-white hover:bg-opacity-20 transition-colors duration-200"
+                                @click="closeModal"
+                            >
+                                <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+                        
+                        <div class="bg-white px-6 py-5">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                                    <div class="flex space-x-2">
+                                        <div class="relative flex-grow">
+                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                </svg>
+                                            </div>
+                                            <input
+                                                type="date"
+                                                id="date"
+                                                class="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-10 pr-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                                v-model="newEntry.date"
+                                            />
+                                        </div>
+                                        
+                                        <!-- Quick date buttons -->
+                                        <div class="flex space-x-1">
+                                            <button
+                                                type="button"
+                                                class="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium text-gray-700"
+                                                @click="setYesterday"
+                                                title="Yesterday"
+                                            >
+                                                -1
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="px-2 py-1 bg-blue-100 hover:bg-blue-200 rounded text-xs font-medium text-blue-700"
+                                                @click="setToday"
+                                                title="Today"
+                                            >
+                                                Today
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium text-gray-700"
+                                                @click="setTomorrow"
+                                                title="Tomorrow"
+                                            >
+                                                +1
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-1 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-1">Time Range</label>
+                                        <div class="grid grid-cols-2 gap-2">
+                                            <div class="relative">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <input
+                                                    type="time"
+                                                    id="startTime"
+                                                    class="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-10 pr-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                                    v-model="newEntry.startTime"
+                                                />
+                                            </div>
+                                            
+                                            <div class="relative">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <svg class="h-4 w-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    </svg>
+                                                </div>
+                                                <input
+                                                    type="time"
+                                                    id="endTime"
+                                                    class="block w-full border border-gray-300 rounded-md shadow-sm py-2 pl-10 pr-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                                    v-model="newEntry.endTime"
+                                                />
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Quick time presets -->
+                                        <div class="mt-2 flex flex-wrap gap-1">
+                                            <button
+                                                type="button"
+                                                class="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium text-gray-700"
+                                                @click="setTimePreset('09:00', '17:00')"
+                                            >
+                                                Full Day (9-5)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium text-gray-700"
+                                                @click="setTimePreset('09:00', '13:00')"
+                                            >
+                                                Morning (9-1)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium text-gray-700"
+                                                @click="setTimePreset('13:00', '17:00')"
+                                            >
+                                                Afternoon (1-5)
+                                            </button>
+                                            <button
+                                                type="button"
+                                                class="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded text-xs font-medium text-gray-700"
+                                                @click="setTimePreset('17:00', '19:00')"
+                                            >
+                                                Overtime (5-7)
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label for="type" class="block text-sm font-medium text-gray-700 mb-1">Type</label>
+                                    <div class="grid grid-cols-5 gap-2">
+                                        <button
+                                            v-for="category in categories"
+                                            :key="category.id"
+                                            type="button"
+                                            class="flex items-center p-2 border rounded-md transition-all duration-200"
+                                            :class="{
+                                                'ring-2 ring-offset-2 shadow-md': newEntry.type === category.type,
+                                                'shadow-sm hover:shadow': newEntry.type !== category.type
+                                            }"
+                                            :style="{
+                                                backgroundColor: newEntry.type === category.type ? `${category.color}20` : 'white',
+                                                borderColor: newEntry.type === category.type ? category.color : '#e2e8f0',
+                                                ringColor: category.color
+                                            }"
+                                            @click="newEntry.type = category.type"
+                                        >
+                                            <div 
+                                                class="rounded-full p-1 mr-2" 
+                                                :style="{
+                                                    backgroundColor: category.color
+                                                }"
+                                            >
+                                                <svg class="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path v-if="category.type === 'work'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                    <path v-else-if="category.type === 'remote'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                                                    <path v-else-if="category.type === 'sick'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                    <path v-else-if="category.type === 'holiday'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                                    <path v-else-if="category.type === 'overtime'" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                </svg>
+                                            </div>
+                                            <span class="text-xs font-medium">{{ category.name }}</span>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div class="md:col-span-2">
+                                    <label for="notes" class="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                                    <textarea
+                                        id="notes"
+                                        rows="3"
+                                        class="block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                                        v-model="newEntry.notes"
+                                        placeholder="Add any additional details here..."
+                                    ></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- Calculate hours in real time -->
+                            <div class="mt-4 bg-gray-50 p-3 rounded-md">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-sm text-gray-500">Duration:</span>
+                                    <span class="text-lg font-bold" :style="{color: getSelectedCategoryColor()}">
+                                        {{ calculateHours(newEntry.startTime, newEntry.endTime).toFixed(1) }} hours
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                            <button
+                                type="button"
+                                class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                @click="closeModal"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 text-base font-medium text-white focus:outline-none focus:ring-2 focus:ring-offset-2"
+                                :style="{
+                                    backgroundColor: getSelectedCategoryColor(),
+                                }"
+                                @click="editingEntry ? handleUpdateEntry() : handleAddEntry()"
+                            >
+                                {{ editingEntry ? 'Update' : 'Add' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Ensure Lodash is available or provide fallback functions
+        if (!window._) {
+            console.warn("Lodash not loaded, using fallback implementations");
+            window._ = {
+                sortBy: (array, key) => {
+                    if (typeof key === 'string') {
+                        return [...array].sort((a, b) => {
+                            if (a[key] < b[key]) return -1;
+                            if (a[key] > b[key]) return 1;
+                            return 0;
+                        });
+                    } else {
+                        return [...array].sort((a, b) => key(a) - key(b));
+                    }
+                },
+                groupBy: (array, key) => {
+                    return array.reduce((result, item) => {
+                        const keyValue = typeof key === 'function' ? key(item) : item[key];
+                        (result[keyValue] = result[keyValue] || []).push(item);
+                        return result;
+                    }, {});
+                }
+            };
+        }
+
+        const { createApp, ref, reactive, computed, watch, onMounted } = Vue;
+
+        createApp({
+            setup() {
+                // State
+                const activeTab = ref('dashboard');
+                const loading = ref(true);
+                const db = ref(null);
+                const userId = ref(1);
+                const users = ref([]);
+                const user = ref(null);
+                const timeEntries = ref([]);
+                const categories = ref([]);
+                const showAddModal = ref(false);
+                const editingEntry = ref(null);
+                const activeCategories = ref(null);
+
+                const dateRange = reactive({
+                    start: new Date(new Date().getFullYear(), new Date().getMonth(), 1),
+                    end: new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0)
+                });
+
+                const newEntry = reactive({
+                    date: new Date().toISOString().split('T')[0],
+                    startTime: '09:00',
+                    endTime: '17:00',
+                    type: 'work',
+                    notes: ''
+                });
+
+                // Helper functions
+                const formatDate = (dateString) => {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+                };
+
+                const formatDateShort = (dateString) => {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+                };
+
+                const formatDateFull = (dateString) => {
+                    const date = new Date(dateString);
+                    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+                };
+
+                const formatMonth = (date) => {
+                    return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                };
+
+                const calculateHours = (startTime, endTime) => {
+                    if (!startTime || !endTime) return 0;
+                    
+                    const [startHours, startMinutes] = startTime.split(':').map(Number);
+                    const [endHours, endMinutes] = endTime.split(':').map(Number);
+                    
+                    const totalStartMinutes = startHours * 60 + startMinutes;
+                    const totalEndMinutes = endHours * 60 + endMinutes;
+                    
+                    return (totalEndMinutes - totalStartMinutes) / 60;
+                };
+
+                const getCategoryColor = (categoryId) => {
+                    const category = categories.value.find(c => c.id === categoryId);
+                    return category?.color || '#ccc';
+                };
+
+                const getCategoryName = (categoryId) => {
+                    const category = categories.value.find(c => c.id === categoryId);
+                    return category?.name || '';
+                };
+
+                const getSelectedCategoryColor = () => {
+                    const category = categories.value.find(c => c.type === newEntry.type);
+                    return category?.color || '#4F46E5';
+                };
+
+                const getSelectedCategoryName = () => {
+                    const category = categories.value.find(c => c.type === newEntry.type);
+                    return category?.name || newEntry.type;
+                };
+
+                // Generate sample time entries
+                const generateSampleEntries = (users, categories) => {
+                    const entries = [];
+                    const now = new Date();
+                    const startDate = new Date(now);
+                    startDate.setDate(startDate.getDate() - 60); // Go back 60 days
+                    
+                    // Generate entries for each day
+                    for (let d = new Date(startDate); d <= now; d.setDate(d.getDate() + 1)) {
+                        // Skip weekends
+                        if (d.getDay() === 0 || d.getDay() === 6) continue;
+                        
+                        // Format date as YYYY-MM-DD string without time component to avoid timezone issues
+                        const date = d.toISOString().split('T')[0];
+                        
+                        // For each user
+                        users.forEach(user => {
+                            // Randomly determine if this is a special day (sick, holiday, remote)
+                            const rand = Math.random();
+                            let type;
+                            
+                            if (rand < 0.05) {
+                                type = 'sick';
+                            } else if (rand < 0.15) {
+                                type = 'holiday';
+                            } else if (rand < 0.35) {
+                                type = 'remote';
+                            } else {
+                                type = 'work';
+                            }
+                            
+                            // Find the category that matches this type
+                            const category = categories.find(c => c.type === type);
+                            
+                            // Create time entry - full day 9-5 for simplicity
+                            entries.push({
+                                id: entries.length + 1,
+                                userId: user.id,
+                                date,
+                                startTime: '09:00',
+                                endTime: '17:00',
+                                category: category.id,
+                                type: type,
+                                notes: `Sample ${type} entry`
+                            });
+                            
+                            // Occasionally add an overtime entry
+                            if (Math.random() < 0.1 && type === 'work') {
+                                const overtimeCategory = categories.find(c => c.type === 'overtime');
+                                entries.push({
+                                    id: entries.length + 1,
+                                    userId: user.id,
+                                    date,
+                                    startTime: '17:00',
+                                    endTime: '19:00',
+                                    category: overtimeCategory.id,
+                                    type: 'overtime',
+                                    notes: 'Sample overtime entry'
+                                });
+                            }
+                        });
+                    }
+                    
+                    return entries;
+                };
+
+                // Initialize the database
+                onMounted(() => {
+                    const initDatabase = async () => {
+                        try {
+                            console.log("Initializing database...");
+                            
+                            // Open Web SQL Database
+                            const db = window.openDatabase('timeTrackProDB', '1.0', 'Time Track Pro Database', 2 * 1024 * 1024);
+                            
+                            // Check if data exists in WebSQL
+                            db.transaction(function(tx) {
+                                // Create tables if they don't exist
+                                tx.executeSql(
+                                    'CREATE TABLE IF NOT EXISTS users (id INTEGER PRIMARY KEY, name TEXT, email TEXT, holidayAllocation REAL, sickLeaveAllocation REAL)',
+                                    [],
+                                    function() { console.log("Users table created or exists"); },
+                                    function(tx, error) { console.error("Error creating users table:", error); }
+                                );
+                                
+                                tx.executeSql(
+                                    'CREATE TABLE IF NOT EXISTS categories (id INTEGER PRIMARY KEY, name TEXT, color TEXT, isDefault INTEGER, shortcut TEXT, type TEXT)',
+                                    [],
+                                    function() { console.log("Categories table created or exists"); },
+                                    function(tx, error) { console.error("Error creating categories table:", error); }
+                                );
+                                
+                                tx.executeSql(
+                                    'CREATE TABLE IF NOT EXISTS time_entries (id INTEGER PRIMARY KEY, userId INTEGER, date TEXT, startTime TEXT, endTime TEXT, category INTEGER, type TEXT, notes TEXT)',
+                                    [],
+                                    function() { console.log("Time entries table created or exists"); },
+                                    function(tx, error) { console.error("Error creating time entries table:", error); }
+                                );
+                                
+                                // Check if data exists in users table
+                                tx.executeSql(
+                                    'SELECT COUNT(*) as count FROM users',
+                                    [],
+                                    function(tx, results) {
+                                        const count = results.rows.item(0).count;
+                                        if (count === 0) {
+                                            // No data, initialize with sample data
+                                            initSampleData(db);
+                                        } else {
+                                            // Data exists, load it
+                                            loadDataFromDB(db);
+                                        }
+                                    },
+                                    function(tx, error) {
+                                        console.error("Error checking users table:", error);
+                                        // If error, probably table doesn't exist yet, initialize with sample data
+                                        initSampleData(db);
+                                    }
+                                );
+                            });
+                            
+                            // Store database reference
+                            db.value = db;
+                        } catch (error) {
+                            console.error("Database initialization error:", error);
+                            // Fallback to sample data without persistence
+                            initSampleDataWithoutDB();
+                            loading.value = false;
+                        }
+                    };
+                    
+                    // Function to initialize sample data and store in DB
+                    const initSampleData = (db) => {
+                        console.log("Initializing sample data...");
+                        
+                        // Create sample data
+                        const sampleUsers = [
+                            { id: 1, name: 'John Doe', email: 'john@example.com', holidayAllocation: 25 * 8, sickLeaveAllocation: 10 * 8 },
+                            { id: 2, name: 'Jane Smith', email: 'jane@example.com', holidayAllocation: 25 * 8, sickLeaveAllocation: 10 * 8 }
+                        ];
+                        
+                        const sampleCategories = [
+                            { id: 1, name: 'Regular Work', color: '#4CAF50', isDefault: true, shortcut: 'w', type: 'work' },
+                            { id: 2, name: 'Remote Work', color: '#2196F3', isDefault: false, shortcut: 'r', type: 'remote' },
+                            { id: 3, name: 'Sick Leave', color: '#F44336', isDefault: false, shortcut: 's', type: 'sick' },
+                            { id: 4, name: 'Holiday', color: '#FF9800', isDefault: false, shortcut: 'h', type: 'holiday' },
+                            { id: 5, name: 'Overtime', color: '#9C27B0', isDefault: false, shortcut: 'o', type: 'overtime' }
+                        ];
+                        
+                        // Insert sample data into DB
+                        db.transaction(function(tx) {
+                            // Insert users
+                            sampleUsers.forEach(user => {
+                                tx.executeSql(
+                                    'INSERT INTO users (id, name, email, holidayAllocation, sickLeaveAllocation) VALUES (?, ?, ?, ?, ?)',
+                                    [user.id, user.name, user.email, user.holidayAllocation, user.sickLeaveAllocation],
+                                    null,
+                                    (tx, error) => console.error("Error inserting user:", error)
+                                );
+                            });
+                            
+                            // Insert categories
+                            sampleCategories.forEach(category => {
+                                tx.executeSql(
+                                    'INSERT INTO categories (id, name, color, isDefault, shortcut, type) VALUES (?, ?, ?, ?, ?, ?)',
+                                    [category.id, category.name, category.color, category.isDefault ? 1 : 0, category.shortcut, category.type],
+                                    null,
+                                    (tx, error) => console.error("Error inserting category:", error)
+                                );
+                            });
+                            
+                            // Generate sample time entries
+                            const sampleTimeEntries = generateSampleEntries(sampleUsers, sampleCategories);
+                            
+                            // Insert time entries
+                            sampleTimeEntries.forEach(entry => {
+                                tx.executeSql(
+                                    'INSERT INTO time_entries (id, userId, date, startTime, endTime, category, type, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                                    [entry.id, entry.userId, entry.date, entry.startTime, entry.endTime, entry.category, entry.type, entry.notes],
+                                    null,
+                                    (tx, error) => console.error("Error inserting time entry:", error)
+                                );
+                            });
+                        }, 
+                        function(error) {
+                            console.error("Transaction error:", error);
+                        }, 
+                        function() {
+                            console.log("Transaction successful");
+                            // Load data from DB
+                            loadDataFromDB(db);
+                        });
+                    };
+                    
+                    // Function to load data from DB
+                    const loadDataFromDB = (db) => {
+                        db.transaction(function(tx) {
+                            // Load users
+                            tx.executeSql(
+                                'SELECT * FROM users',
+                                [],
+                                function(tx, results) {
+                                    const loadedUsers = [];
+                                    for (let i = 0; i < results.rows.length; i++) {
+                                        loadedUsers.push(results.rows.item(i));
+                                    }
+                                    users.value = loadedUsers;
+                                    if (loadedUsers.length > 0) {
+                                        user.value = loadedUsers[0];
+                                        userId.value = loadedUsers[0].id;
+                                    }
+                                },
+                                function(tx, error) {
+                                    console.error("Error loading users:", error);
+                                }
+                            );
+                            
+                            // Load categories
+                            tx.executeSql(
+                                'SELECT * FROM categories',
+                                [],
+                                function(tx, results) {
+                                    const loadedCategories = [];
+                                    for (let i = 0; i < results.rows.length; i++) {
+                                        const cat = results.rows.item(i);
+                                        loadedCategories.push({
+                                            ...cat,
+                                            isDefault: cat.isDefault === 1
+                                        });
+                                    }
+                                    categories.value = loadedCategories;
+                                },
+                                function(tx, error) {
+                                    console.error("Error loading categories:", error);
+                                }
+                            );
+                            
+                            // Load time entries
+                            tx.executeSql(
+                                'SELECT * FROM time_entries',
+                                [],
+                                function(tx, results) {
+                                    const loadedEntries = [];
+                                    for (let i = 0; i < results.rows.length; i++) {
+                                        loadedEntries.push(results.rows.item(i));
+                                    }
+                                    timeEntries.value = loadedEntries;
+                                    loading.value = false;
+                                },
+                                function(tx, error) {
+                                    console.error("Error loading time entries:", error);
+                                    loading.value = false;
+                                }
+                            );
+                        });
+                    };
+                    
+                    // Fallback function if Web SQL is not available
+                    const initSampleDataWithoutDB = () => {
+                        console.log("Initializing sample data without persistence...");
+                        
+                        // Create sample data
+                        const sampleUsers = [
+                            { id: 1, name: 'John Doe', email: 'john@example.com', holidayAllocation: 25 * 8, sickLeaveAllocation: 10 * 8 },
+                            { id: 2, name: 'Jane Smith', email: 'jane@example.com', holidayAllocation: 25 * 8, sickLeaveAllocation: 10 * 8 }
+                        ];
+                        
+                        const sampleCategories = [
+                            { id: 1, name: 'Regular Work', color: '#4CAF50', isDefault: true, shortcut: 'w', type: 'work' },
+                            { id: 2, name: 'Remote Work', color: '#2196F3', isDefault: false, shortcut: 'r', type: 'remote' },
+                            { id: 3, name: 'Sick Leave', color: '#F44336', isDefault: false, shortcut: 's', type: 'sick' },
+                            { id: 4, name: 'Holiday', color: '#FF9800', isDefault: false, shortcut: 'h', type: 'holiday' },
+                            { id: 5, name: 'Overtime', color: '#9C27B0', isDefault: false, shortcut: 'o', type: 'overtime' }
+                        ];
+                        
+                        // Create fake time entries
+                        const sampleTimeEntries = generateSampleEntries(sampleUsers, sampleCategories);
+                        
+                        users.value = sampleUsers;
+                        categories.value = sampleCategories;
+                        timeEntries.value = sampleTimeEntries;
+                        user.value = sampleUsers[0]; // Set default user
+                    };
+
+                    initDatabase();
+
+                    // Set up key listeners for shortcuts
+                    const handleKeyDown = (e) => {
+                        // Only trigger if Alt key is pressed along with shortcut
+                        if (e.altKey) {
+                            const key = e.key.toLowerCase();
+                            const category = categories.value.find(c => c.shortcut === key);
+                            if (category) {
+                                newEntry.type = category.type;
+                                showAddModal.value = true;
+                            }
+                        }
+                    };
+                    
+                    window.addEventListener('keydown', handleKeyDown);
+                });
+
+                // Computed properties
+                const filteredEntries = computed(() => {
+                    return timeEntries.value.filter(entry => {
+                        return entry.userId === user.value?.id && 
+                               new Date(entry.date) >= dateRange.start && 
+                               new Date(entry.date) <= dateRange.end;
+                    });
+                });
+
+                const sortedEntries = computed(() => {
+                    if (!window._) {
+                        console.error("Lodash is not loaded");
+                        return [...filteredEntries.value].sort((a, b) => new Date(b.date) - new Date(a.date));
+                    }
+                    return window._.sortBy(filteredEntries.value, 'date').reverse();
+                });
+
+                const stats = computed(() => {
+                    if (!user.value) return {};
+                    
+                    const userEntries = timeEntries.value.filter(entry => entry.userId === user.value.id);
+                    const thisYear = new Date().getFullYear();
+                    const thisYearEntries = userEntries.filter(entry => new Date(entry.date).getFullYear() === thisYear);
+                    
+                    const holidayEntries = thisYearEntries.filter(entry => entry.type === 'holiday');
+                    const sickEntries = thisYearEntries.filter(entry => entry.type === 'sick');
+                    const remoteEntries = thisYearEntries.filter(entry => entry.type === 'remote');
+                    
+                    const totalHolidayHours = holidayEntries.reduce((sum, entry) => 
+                        sum + calculateHours(entry.startTime, entry.endTime), 0);
+                    
+                    const totalSickHours = sickEntries.reduce((sum, entry) => 
+                        sum + calculateHours(entry.startTime, entry.endTime), 0);
+                    
+                    const totalRemoteHours = remoteEntries.reduce((sum, entry) => 
+                        sum + calculateHours(entry.startTime, entry.endTime), 0);
+                    
+                    const remainingHolidayHours = user.value.holidayAllocation - totalHolidayHours;
+                    
+                    return {
+                        totalHolidayHours,
+                        totalSickHours,
+                        totalRemoteHours,
+                        remainingHolidayHours
+                    };
+                });
+
+                const chartData = computed(() => {
+                    if (!filteredEntries.value.length) return { labels: [], datasets: [{ data: [] }] };
+                    
+                    // Group entries by date
+                    const groupedByDate = window._.groupBy(filteredEntries.value, 'date');
+                    
+                    // Calculate hours for each day
+                    const data = Object.entries(groupedByDate).map(([date, entries]) => {
+                        const totalHours = entries.reduce((sum, entry) => 
+                            sum + calculateHours(entry.startTime, entry.endTime), 0);
+                        
+                        return {
+                            date,
+                            hours: totalHours
+                        };
+                    });
+                    
+                    // Sort by date
+                    const sortedData = window._.sortBy(data, 'date');
+                    
+                    return {
+                        labels: sortedData.map(d => formatDate(d.date)),
+                        datasets: [
+                            {
+                                label: 'Hours',
+                                data: sortedData.map(d => d.hours),
+                                backgroundColor: '#4CAF50',
+                            }
+                        ]
+                    };
+                });
+
+                const yearlyChartData = computed(() => {
+                    if (!user.value || !timeEntries.value.length) return { labels: [], datasets: [] };
+                    
+                    const currentYear = new Date().getFullYear();
+                    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+                    
+                    // Filter entries for current user and current year
+                    const yearEntries = timeEntries.value.filter(entry => {
+                        const entryDate = new Date(entry.date);
+                        return entry.userId === user.value.id && entryDate.getFullYear() === currentYear;
+                    });
+                    
+                    // Group by month and category
+                    const monthCategoryData = {};
+                    
+                    yearEntries.forEach(entry => {
+                        const entryDate = new Date(entry.date);
+                        const month = entryDate.getMonth();
+                        const categoryId = entry.category;
+                        const hours = calculateHours(entry.startTime, entry.endTime);
+                        
+                        monthCategoryData[month] = monthCategoryData[month] || {};
+                        monthCategoryData[month][categoryId] = (monthCategoryData[month][categoryId] || 0) + hours;
+                    });
+                    
+                    // Create datasets for each category
+                    const datasets = [];
+                    categories.value.forEach(category => {
+                        const data = [];
+                        for (let i = 0; i < 12; i++) {
+                            data.push((monthCategoryData[i] && monthCategoryData[i][category.id]) || 0);
+                        }
+                        
+                        datasets.push({
+                            categoryId: category.id.toString(),
+                            data,
+                            backgroundColor: category.color,
+                            label: category.name,
+                        });
+                    });
+                    
+                    return {
+                        labels: monthNames,
+                        datasets
+                    };
+                });
+
+                const upcomingHolidays = computed(() => {
+                    if (!user.value) return [];
+                    
+                    const now = new Date();
+                    now.setHours(0, 0, 0, 0);
+                    
+                    return timeEntries.value
+                        .filter(entry => 
+                            entry.userId === user.value.id && 
+                            entry.type === 'holiday' && 
+                            new Date(entry.date) >= now
+                        )
+                        .sort((a, b) => new Date(a.date) - new Date(b.date))
+                        .slice(0, 5); // Show next 5 holidays
+                });
+
+                // Calendar view computations
+                const startingDayOfWeek = computed(() => {
+                    const firstDay = new Date(dateRange.start.getFullYear(), dateRange.start.getMonth(), 1);
+                    return firstDay.getDay();
+                });
+
+                const daysInMonth = computed(() => {
+                    return new Date(dateRange.start.getFullYear(), dateRange.start.getMonth() + 1, 0).getDate();
+                });
+
+                const emptyCellsToAdd = computed(() => {
+                    const lastDay = new Date(dateRange.start.getFullYear(), dateRange.start.getMonth() + 1, 0);
+                    const endingDayOfWeek = lastDay.getDay();
+                    return 6 - endingDayOfWeek;
+                });
+
+                // Methods
+                const changeUser = () => {
+                    user.value = users.value.find(u => u.id === userId.value);
+                };
+
+                const handlePreviousMonth = () => {
+                    const newStart = new Date(dateRange.start);
+                    newStart.setMonth(newStart.getMonth() - 1);
+                    
+                    const newEnd = new Date(newStart);
+                    newEnd.setMonth(newStart.getMonth() + 1);
+                    newEnd.setDate(0);
+                    
+                    dateRange.start = newStart;
+                    dateRange.end = newEnd;
+                };
+                
+                const handleNextMonth = () => {
+                    const newStart = new Date(dateRange.start);
+                    newStart.setMonth(newStart.getMonth() + 1);
+                    
+                    const newEnd = new Date(newStart);
+                    newEnd.setMonth(newStart.getMonth() + 1);
+                    newEnd.setDate(0);
+                    
+                    dateRange.start = newStart;
+                    dateRange.end = newEnd;
+                };
+
+                const startNewEntry = (type) => {
+                    newEntry.type = type;
+                    showAddModal.value = true;
+                };
+
+                const closeModal = () => {
+                    showAddModal.value = false;
+                    editingEntry.value = null;
+                    
+                    // Reset form
+                    newEntry.date = new Date().toISOString().split('T')[0];
+                    newEntry.startTime = '09:00';
+                    newEntry.endTime = '17:00';
+                    newEntry.type = 'work';
+                    newEntry.notes = '';
+                };
+
+                const handleAddEntry = () => {
+                    const entryId = timeEntries.value.length > 0 
+                        ? Math.max(...timeEntries.value.map(e => e.id)) + 1 
+                        : 1;
+                        
+                    const entry = {
+                        id: entryId,
+                        userId: user.value.id,
+                        date: newEntry.date,
+                        startTime: newEntry.startTime,
+                        endTime: newEntry.endTime,
+                        category: categories.value.find(c => c.type === newEntry.type).id,
+                        type: newEntry.type,
+                        notes: newEntry.notes
+                    };
+                    
+                    // Add to local state
+                    timeEntries.value.push(entry);
+                    
+                    // Save to database
+                    if (db.value) {
+                        db.value.transaction(function(tx) {
+                            tx.executeSql(
+                                'INSERT INTO time_entries (id, userId, date, startTime, endTime, category, type, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+                                [entry.id, entry.userId, entry.date, entry.startTime, entry.endTime, entry.category, entry.type, entry.notes],
+                                function() { console.log("Entry added to database"); },
+                                function(tx, error) { console.error("Error adding entry to database:", error); }
+                            );
+                        });
+                    }
+                    
+                    closeModal();
+                };
+
+                const handleEditEntry = (entry) => {
+                    editingEntry.value = entry;
+                    
+                    newEntry.date = entry.date;
+                    newEntry.startTime = entry.startTime;
+                    newEntry.endTime = entry.endTime;
+                    newEntry.type = entry.type;
+                    newEntry.notes = entry.notes;
+                    
+                    showAddModal.value = true;
+                };
+
+                const handleUpdateEntry = () => {
+                    timeEntries.value = timeEntries.value.map(entry => {
+                        if (entry.id === editingEntry.value.id) {
+                            const updatedEntry = {
+                                ...entry,
+                                date: newEntry.date,
+                                startTime: newEntry.startTime,
+                                endTime: newEntry.endTime,
+                                category: categories.value.find(c => c.type === newEntry.type).id,
+                                type: newEntry.type,
+                                notes: newEntry.notes
+                            };
+                            
+                            // Update in database
+                            if (db.value) {
+                                db.value.transaction(function(tx) {
+                                    tx.executeSql(
+                                        'UPDATE time_entries SET date=?, startTime=?, endTime=?, category=?, type=?, notes=? WHERE id=?',
+                                        [updatedEntry.date, updatedEntry.startTime, updatedEntry.endTime, updatedEntry.category, updatedEntry.type, updatedEntry.notes, updatedEntry.id],
+                                        function() { console.log("Entry updated in database"); },
+                                        function(tx, error) { console.error("Error updating entry in database:", error); }
+                                    );
+                                });
+                            }
+                            
+                            return updatedEntry;
+                        }
+                        return entry;
+                    });
+                    
+                    closeModal();
+                };
+
+                const handleDeleteEntry = (id) => {
+                    if(confirm('Are you sure you want to delete this entry?')) {
+                        // Remove from local state
+                        timeEntries.value = timeEntries.value.filter(entry => entry.id !== id);
+                        
+                        // Remove from database
+                        if (db.value) {
+                            db.value.transaction(function(tx) {
+                                tx.executeSql(
+                                    'DELETE FROM time_entries WHERE id=?',
+                                    [id],
+                                    function() { console.log("Entry deleted from database"); },
+                                    function(tx, error) { console.error("Error deleting entry from database:", error); }
+                                );
+                            });
+                        }
+                    }
+                };
+
+                const toggleCategoryFilter = (categoryId) => {
+                    if (activeCategories.value === categoryId) {
+                        activeCategories.value = null; // Deselect
+                    } else {
+                        activeCategories.value = categoryId; // Select this category
+                    }
+                };
+
+                const isActiveCategory = (categoryId) => {
+                    return activeCategories.value === null || activeCategories.value === parseInt(categoryId);
+                };
+
+                // Date helpers for modal
+                const setYesterday = () => {
+                    const yesterday = new Date();
+                    yesterday.setDate(yesterday.getDate() - 1);
+                    newEntry.date = yesterday.toISOString().split('T')[0];
+                };
+
+                const setToday = () => {
+                    const today = new Date();
+                    newEntry.date = today.toISOString().split('T')[0];
+                };
+
+                const setTomorrow = () => {
+                    const tomorrow = new Date();
+                    tomorrow.setDate(tomorrow.getDate() + 1);
+                    newEntry.date = tomorrow.toISOString().split('T')[0];
+                };
+
+                const setTimePreset = (start, end) => {
+                    newEntry.startTime = start;
+                    newEntry.endTime = end;
+                };
+
+                // Calendar helpers
+                const getDayEntries = (day) => {
+                    const date = new Date(dateRange.start.getFullYear(), dateRange.start.getMonth(), day);
+                    const dateString = date.toISOString().split('T')[0];
+                    return filteredEntries.value.filter(entry => entry.date === dateString);
+                };
+
+                // Chart data calculations for reports
+                const getCategoryHours = (categoryId) => {
+                    return filteredEntries.value
+                        .filter(entry => entry.category === categoryId)
+                        .reduce((sum, entry) => sum + calculateHours(entry.startTime, entry.endTime), 0);
+                };
+
+                const getCategoryPercentage = (categoryId) => {
+                    const totalHours = filteredEntries.value.reduce(
+                        (sum, entry) => sum + calculateHours(entry.startTime, entry.endTime), 0
+                    );
+                    if (totalHours === 0) return 0;
+                    
+                    const categoryHours = getCategoryHours(categoryId);
+                    return (categoryHours / totalHours) * 100;
+                };
+
+                const calculateAverageDailyHours = () => {
+                    if (!chartData.value.datasets[0]?.data?.length) return '0.0';
+                    const average = chartData.value.datasets[0].data.reduce((sum, h) => sum + h, 0) / 
+                                   chartData.value.datasets[0].data.length;
+                    return average.toFixed(1);
+                };
+
+                const calculateTotalMonthHours = () => {
+                    if (!chartData.value.datasets[0]?.data) return '0.0';
+                    const total = chartData.value.datasets[0].data.reduce((sum, h) => sum + h, 0);
+                    return total.toFixed(1);
+                };
+
+                const calculateRemotePercentage = () => {
+                    if (!filteredEntries.value.length) return '0.0%';
+                    const percentage = (filteredEntries.value.filter(e => e.type === 'remote').length / 
+                                      filteredEntries.value.length) * 100;
+                    return percentage.toFixed(1) + '%';
+                };
+
+                return {
+                    // State
+                    activeTab,
+                    loading,
+                    userId,
+                    users,
+                    user,
+                    timeEntries,
+                    categories,
+                    dateRange,
+                    newEntry,
+                    showAddModal,
+                    editingEntry,
+                    activeCategories,
+                    
+                    // Computed
+                    filteredEntries,
+                    sortedEntries,
+                    stats,
+                    chartData,
+                    yearlyChartData,
+                    upcomingHolidays,
+                    startingDayOfWeek,
+                    daysInMonth,
+                    emptyCellsToAdd,
+                    
+                    // Methods
+                    formatDate,
+                    formatDateShort,
+                    formatDateFull,
+                    formatMonth,
+                    calculateHours,
+                    changeUser,
+                    getCategoryColor,
+                    getCategoryName,
+                    getSelectedCategoryColor,
+                    getSelectedCategoryName,
+                    handlePreviousMonth,
+                    handleNextMonth,
+                    startNewEntry,
+                    closeModal,
+                    handleAddEntry,
+                    handleEditEntry,
+                    handleUpdateEntry,
+                    handleDeleteEntry,
+                    toggleCategoryFilter,
+                    isActiveCategory,
+                    setYesterday,
+                    setToday,
+                    setTomorrow,
+                    setTimePreset,
+                    getDayEntries,
+                    getCategoryHours,
+                    getCategoryPercentage,
+                    calculateAverageDailyHours,
+                    calculateTotalMonthHours,
+                    calculateRemotePercentage
+                };
+            }
+        }).mount('#app');
+    </script>
+</body>
+</html>
