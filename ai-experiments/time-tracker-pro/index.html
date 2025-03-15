@@ -1535,8 +1535,13 @@
 
                 // Calendar helpers
                 const getDayEntries = (day) => {
-                    const date = new Date(dateRange.start.getFullYear(), dateRange.start.getMonth(), day);
-                    const dateString = date.toISOString().split('T')[0];
+                    // Create date in YYYY-MM-DD format matching exactly how entry dates are stored
+                    const year = dateRange.start.getFullYear();
+                    const month = String(dateRange.start.getMonth() + 1).padStart(2, '0');
+                    const dayStr = String(day).padStart(2, '0');
+                    const dateString = `${year}-${month}-${dayStr}`;
+                    
+                    // Get entries that match this exact date string
                     return filteredEntries.value.filter(entry => entry.date === dateString);
                 };
 
