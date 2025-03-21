@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TV Satellite Tracker</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            overflow-x: hidden;
+            background-color: #121212;
+            color: #f5f5f5;
+        }
+        
+        .container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            width: 100vw;
+        }
+        
+        .header {
+            padding: 1rem;
+            background-color: #1a1a1a;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            z-index: 10;
+        }
+        
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+        }
+        
+        @media (min-width: 768px) {
+            .controls {
+                flex-direction: row;
+            }
+        }
+        
+        .search-box {
+            flex: 1;
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #f5f5f5;
+        }
+        
+        .filters {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        
+        select {
+            padding: 0.5rem;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background-color: #2a2a2a;
+            color: #f5f5f5;
+        }
+        
+        .canvas-container {
+            flex: 1;
+            position: relative;
+        }
+        
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        
+        .satellite-info {
+            position: absolute;
+            bottom: 1rem;
+            left: 1rem;
+            background-color: rgba(26, 26, 26, 0.8);
+            padding: 1rem;
+            border-radius: 4px;
+            max-width: 300px;
+            display: none;
+        }
+        
+        .info-visible {
+            display: block;
+        }
+        
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.2rem;
+            background-color: rgba(26, 26, 26, 0.8);
+            padding: 1rem;
+            border-radius: 4px;
+        }
+        
+        .instructions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background-color: rgba(26, 26, 26, 0.8);
+            padding: 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            max-width: 200px;
+        }
+        
+        .satellite-label {
+            position: absolute;
+            color: white;
+            padding: 2px;
+            background-color: rgba(0, 0, 0, 0.5);
+            border-radius: 2px;
+            font-size: 10px;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+        
+        @media (min-width: 768px) {
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .instructions {
+                font-size: 1rem;
+                max-width: 300px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>TV Satellite Tracker</h1>
+            <div class="controls">
+                <input type="text" class="search-box" placeholder="Search satellites..." id="search">
+                <div class="filters">
+                    <select id="region-filter">
+                        <option value="all">All Regions</option>
+                        <option value="north-america">North America</option>
+                        <option value="south-america">South America</option>
+                        <option value="europe">Europe</option>
+                        <option value="africa">Africa</option>
+                        <option value="asia">Asia</option>
+                        <option value="australia">Australia</option>
+                    </select>
+                    <select id="band-filter">
+                        <option value="all">All Bands</option>
+                        <option value="c-band">C-Band</option>
+                        <option value="ku-band">Ku-Band</option>
+                        <option value="ka-band">Ka-Band</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="canvas-container">
+            <canvas id="satellite-canvas"></canvas>
+            <div class="satellite-info" id="info-panel">
+                <h3 id="sat-name">Satellite Name</h3>
+                <p id="sat-position">Position: 0.0°E</p>
+                <p id="sat-operator">Operator: Unknown</p>
+                <p id="sat-coverage">Coverage: Global</p>
+                <p id="sat-bands">Frequency Bands: Ku-Band</p>
+            </div>
+            <div class="loading" id="loading">Loading satellite data...</div>
+            <div class="instructions">
+                <p>Mouse/Touch: Rotate view</p>
+                <p>Scroll/Pinch: Zoom in/out</p>
+                <p>Click on satellite: View details</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Global variables
+        let scene, camera, renderer, earth, satellites = [], raycaster, mouse, selectedSatellite = null;
+        let satLabels = [];
+        const EARTH_RADIUS = 1;
+        const GEO_ORBIT_RADIUS = 2.5;
+        let isDragging = false;
+        let previousMousePosition = { x: 0, y: 0 };
+        
+        // Satellite data
+        const satelliteData = [
+            { name: "Intelsat 901", position: -18.0, operator: "Intelsat", coverage: ["Europe", "North America"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Eutelsat 16A", position: 16.0, operator: "Eutelsat", coverage: ["Europe", "Africa", "Middle East"], bands: ["Ku-Band"], active: true },
+            { name: "Astra 2E", position: 28.2, operator: "SES", coverage: ["Europe", "Middle East", "Africa"], bands: ["Ku-Band", "Ka-Band"], active: true },
+            { name: "Astra 1M", position: 19.2, operator: "SES", coverage: ["Europe"], bands: ["Ku-Band"], active: true },
+            { name: "Hot Bird 13B", position: 13.0, operator: "Eutelsat", coverage: ["Europe", "North Africa", "Middle East"], bands: ["Ku-Band"], active: true },
+            { name: "DirecTV 15", position: -103.0, operator: "AT&T", coverage: ["North America"], bands: ["Ku-Band", "Ka-Band"], active: true },
+            { name: "Galaxy 19", position: -97.0, operator: "Intelsat", coverage: ["North America"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "SES 6", position: -40.5, operator: "SES", coverage: ["North America", "South America"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Hispasat 30W-5", position: -30.0, operator: "Hispasat", coverage: ["Europe", "North Africa", "South America"], bands: ["Ku-Band"], active: true },
+            { name: "AsiaSat 7", position: 105.5, operator: "AsiaSat", coverage: ["Asia", "Middle East", "Australia"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Apstar 7", position: 76.5, operator: "APT Satellite", coverage: ["Asia", "Middle East", "Africa"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Intelsat 20", position: 68.5, operator: "Intelsat", coverage: ["Asia", "Africa", "Middle East"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Optus D3", position: 156.0, operator: "Optus", coverage: ["Australia", "New Zealand"], bands: ["Ku-Band"], active: true },
+            { name: "Telstar 18V", position: 138.0, operator: "Telesat", coverage: ["Asia", "Australia"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Eutelsat 7C", position: 7.0, operator: "Eutelsat", coverage: ["Europe", "Africa"], bands: ["Ku-Band"], active: true },
+            { name: "Intelsat 10-02", position: 1.0, operator: "Intelsat", coverage: ["Europe", "Middle East"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "NSS-6", position: 95.0, operator: "SES", coverage: ["Asia"], bands: ["Ku-Band"], active: true },
+            { name: "Yamal 402", position: 55.0, operator: "Gazprom Space Systems", coverage: ["Europe", "Asia", "Africa"], bands: ["Ku-Band"], active: true },
+            { name: "SES 10", position: -67.0, operator: "SES", coverage: ["South America"], bands: ["Ku-Band"], active: true },
+            { name: "Star One C4", position: -70.0, operator: "Embratel Star One", coverage: ["South America"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Thor 6", position: 0.8, operator: "Telenor", coverage: ["Europe"], bands: ["Ku-Band"], active: true },
+            { name: "Turksat 4A", position: 42.0, operator: "Turksat", coverage: ["Europe", "Asia", "Africa"], bands: ["Ku-Band", "Ka-Band"], active: true },
+            { name: "BulgariaSat-1", position: 1.9, operator: "Bulgaria Sat", coverage: ["Europe"], bands: ["Ku-Band"], active: true },
+            { name: "Express AM8", position: 14.0, operator: "RSCC", coverage: ["Europe", "Africa", "South America"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Amazonas 3", position: -61.0, operator: "Hispasat", coverage: ["South America", "North America"], bands: ["C-Band", "Ku-Band", "Ka-Band"], active: true },
+            { name: "Intelsat 21", position: -58.0, operator: "Intelsat", coverage: ["North America", "South America"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "ABS-2", position: 75.0, operator: "ABS", coverage: ["Asia", "Middle East", "Africa"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Measat-3", position: 91.5, operator: "Measat", coverage: ["Asia", "Australia"], bands: ["C-Band", "Ku-Band"], active: true },
+            { name: "Express AM6", position: 53.0, operator: "RSCC", coverage: ["Europe", "Asia"], bands: ["C-Band", "Ku-Band", "Ka-Band"], active: true },
+            { name: "Eutelsat 36B", position: 36.0, operator: "Eutelsat", coverage: ["Europe", "Africa", "Middle East"], bands: ["Ku-Band"], active: true }
+        ];
+        
+        // Filtered satellites
+        let filteredSatellites = [...satelliteData];
+        
+        // DOM elements
+        const loadingElement = document.getElementById('loading');
+        const searchBox = document.getElementById('search');
+        const regionFilter = document.getElementById('region-filter');
+        const bandFilter = document.getElementById('band-filter');
+        const infoPanel = document.getElementById('info-panel');
+        const satName = document.getElementById('sat-name');
+        const satPosition = document.getElementById('sat-position');
+        const satOperator = document.getElementById('sat-operator');
+        const satCoverage = document.getElementById('sat-coverage');
+        const satBands = document.getElementById('sat-bands');
+        
+        // Initialize Three.js scene
+        function init() {
+            // Create scene
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x000000);
+            
+            // Create camera with responsive aspect ratio
+            const container = document.querySelector('.canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            const aspectRatio = width / height;
+            
+            camera = new THREE.PerspectiveCamera(45, aspectRatio, 0.1, 1000);
+            camera.position.set(0, 0, 7);
+            
+            // Create renderer
+            renderer = new THREE.WebGLRenderer({ 
+                canvas: document.getElementById('satellite-canvas'),
+                antialias: true 
+            });
+            renderer.setSize(width, height);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            
+            // Add lighting
+            const ambientLight = new THREE.AmbientLight(0x404040, 1);
+            scene.add(ambientLight);
+            
+            const sunLight = new THREE.DirectionalLight(0xffffff, 1);
+            sunLight.position.set(5, 2, 5);
+            scene.add(sunLight);
+            
+            // Create Earth
+            createEarth();
+            
+            // Create satellites
+            createSatellites(filteredSatellites);
+            
+            // Initialize raycaster for object selection
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+            
+            // Add event listeners
+            window.addEventListener('resize', onWindowResize);
+            document.getElementById('satellite-canvas').addEventListener('mousedown', onMouseDown);
+            document.getElementById('satellite-canvas').addEventListener('mousemove', onMouseMove);
+            document.getElementById('satellite-canvas').addEventListener('mouseup', onMouseUp);
+            document.getElementById('satellite-canvas').addEventListener('click', onClick);
+            document.getElementById('satellite-canvas').addEventListener('wheel', onMouseWheel);
+            
+            // Touch events for mobile
+            document.getElementById('satellite-canvas').addEventListener('touchstart', onTouchStart, { passive: false });
+            document.getElementById('satellite-canvas').addEventListener('touchmove', onTouchMove, { passive: false });
+            document.getElementById('satellite-canvas').addEventListener('touchend', onTouchEnd);
+            
+            // Search and filter events
+            searchBox.addEventListener('input', filterSatellites);
+            regionFilter.addEventListener('change', filterSatellites);
+            bandFilter.addEventListener('change', filterSatellites);
+            
+            // Hide loading indicator
+            loadingElement.style.display = 'none';
+            
+            // Start animation loop
+            animate();
+        }
+        
+        function createEarth() {
+            // Earth geometry
+            const earthGeometry = new THREE.SphereGeometry(EARTH_RADIUS, 32, 32);
+            
+            // Earth material (using a simple texture for now)
+            const earthMaterial = new THREE.MeshPhongMaterial({
+                color: 0x2244aa,
+                emissive: 0x112244,
+                specular: 0x222222,
+                shininess: 25,
+                flatShading: false
+            });
+            
+            // Create Earth mesh
+            earth = new THREE.Mesh(earthGeometry, earthMaterial);
+            scene.add(earth);
+            
+            // Add continents using wireframe sphere with different segments
+            const continentGeometry = new THREE.SphereGeometry(EARTH_RADIUS * 1.001, 24, 16);
+            const continentMaterial = new THREE.MeshBasicMaterial({
+                color: 0x44aa44,
+                wireframe: true,
+                transparent: true,
+                opacity: 0.5
+            });
+            const continents = new THREE.Mesh(continentGeometry, continentMaterial);
+            earth.add(continents);
+            
+            // Add equator line
+            const equatorGeometry = new THREE.RingGeometry(EARTH_RADIUS * 1.001, EARTH_RADIUS * 1.003, 64);
+            const equatorMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0xffff00, 
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.5
+            });
+            const equator = new THREE.Mesh(equatorGeometry, equatorMaterial);
+            equator.rotation.x = Math.PI / 2;
+            earth.add(equator);
+            
+            // Add orbit ring
+            const orbitGeometry = new THREE.RingGeometry(GEO_ORBIT_RADIUS - 0.01, GEO_ORBIT_RADIUS + 0.01, 128);
+            const orbitMaterial = new THREE.MeshBasicMaterial({ 
+                color: 0x3399ff, 
+                side: THREE.DoubleSide,
+                transparent: true,
+                opacity: 0.3
+            });
+            const orbitRing = new THREE.Mesh(orbitGeometry, orbitMaterial);
+            orbitRing.rotation.x = Math.PI / 2;
+            scene.add(orbitRing);
+        }
+        
+        function createSatellites(satellitesList) {
+            // Remove previous satellites and labels
+            satellites.forEach(sat => scene.remove(sat));
+            satellites = [];
+            
+            satLabels.forEach(label => {
+                if (label.parentNode) {
+                    label.parentNode.removeChild(label);
+                }
+            });
+            satLabels = [];
+            
+            // Create new satellites based on filtered data
+            satellitesList.forEach((sat, index) => {
+                // Convert longitude to radians
+                const longitude = THREE.MathUtils.degToRad(sat.position);
+                
+                // Calculate position on geostationary orbit
+                const x = GEO_ORBIT_RADIUS * Math.cos(longitude);
+                const z = GEO_ORBIT_RADIUS * Math.sin(longitude);
+                
+                // Create satellite geometry (box with solar panels)
+                const satelliteGroup = new THREE.Group();
+                
+                // Main satellite body
+                const bodyGeometry = new THREE.BoxGeometry(0.08, 0.08, 0.08);
+                
+                // Choose color based on bands
+                let color;
+                if (sat.bands.includes("Ka-Band")) {
+                    color = 0xff3366; // Pink for Ka-Band
+                } else if (sat.bands.includes("Ku-Band")) {
+                    color = 0x33aaff; // Blue for Ku-Band
+                } else {
+                    color = 0x66ff66; // Green for C-Band
+                }
+                
+                const bodyMaterial = new THREE.MeshLambertMaterial({ color: color });
+                const body = new THREE.Mesh(bodyGeometry, bodyMaterial);
+                satelliteGroup.add(body);
+                
+                // Solar panels
+                const panelGeometry = new THREE.BoxGeometry(0.22, 0.08, 0.01);
+                const panelMaterial = new THREE.MeshLambertMaterial({ color: 0x1a1a5a });
+                
+                const leftPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+                leftPanel.position.x = -0.15;
+                satelliteGroup.add(leftPanel);
+                
+                const rightPanel = new THREE.Mesh(panelGeometry, panelMaterial);
+                rightPanel.position.x = 0.15;
+                satelliteGroup.add(rightPanel);
+                
+                // Position the satellite group
+                satelliteGroup.position.set(x, 0, z);
+                
+                // Calculate rotation to point towards Earth center
+                satelliteGroup.lookAt(0, 0, 0);
+                
+                // Store satellite data
+                satelliteGroup.userData = { 
+                    satelliteData: sat, 
+                    index: index,
+                    originalPosition: new THREE.Vector3(x, 0, z)
+                };
+                
+                // Add to scene and array
+                scene.add(satelliteGroup);
+                satellites.push(satelliteGroup);
+                
+                // Create label for this satellite
+                const label = document.createElement('div');
+                label.className = 'satellite-label';
+                label.textContent = sat.name;
+                label.style.display = 'none'; // Initially hidden
+                document.body.appendChild(label);
+                satLabels.push(label);
+            });
+        }
+        
+        function filterSatellites() {
+            const searchTerm = searchBox.value.toLowerCase();
+            const region = regionFilter.value;
+            const band = bandFilter.value;
+            
+            filteredSatellites = satelliteData.filter(sat => {
+                // Filter by search term
+                const matchesSearch = sat.name.toLowerCase().includes(searchTerm) || 
+                                    sat.operator.toLowerCase().includes(searchTerm);
+                
+                // Filter by region
+                const matchesRegion = region === 'all' || 
+                                    (sat.coverage && sat.coverage.some(area => 
+                                        area.toLowerCase().includes(region.replace('-', ' '))));
+                
+                // Filter by band
+                const matchesBand = band === 'all' || 
+                                    (sat.bands && sat.bands.some(b => 
+                                        b.toLowerCase() === band.toLowerCase()));
+                
+                return matchesSearch && matchesRegion && matchesBand;
+            });
+            
+            // Recreate satellites with filtered data
+            createSatellites(filteredSatellites);
+            
+            // Reset selection if selected satellite is filtered out
+            if (selectedSatellite) {
+                const stillExists = filteredSatellites.some(sat => 
+                    sat.name === selectedSatellite.userData.satelliteData.name);
+                
+                if (!stillExists) {
+                    selectedSatellite = null;
+                    infoPanel.classList.remove('info-visible');
+                }
+            }
+        }
+        
+        // Event handlers
+        function onWindowResize() {
+            const container = document.querySelector('.canvas-container');
+            const width = container.clientWidth;
+            const height = container.clientHeight;
+            
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+            
+            renderer.setSize(width, height);
+        }
+        
+        function onMouseDown(event) {
+            isDragging = true;
+            previousMousePosition = {
+                x: event.clientX,
+                y: event.clientY
+            };
+            event.preventDefault();
+        }
+        
+        function onMouseMove(event) {
+            // Update mouse position for raycasting
+            const canvasBounds = renderer.domElement.getBoundingClientRect();
+            mouse.x = ((event.clientX - canvasBounds.left) / canvasBounds.width) * 2 - 1;
+            mouse.y = -((event.clientY - canvasBounds.top) / canvasBounds.height) * 2 + 1;
+            
+            // Handle rotation when dragging
+            if (isDragging) {
+                const deltaMove = {
+                    x: event.clientX - previousMousePosition.x,
+                    y: event.clientY - previousMousePosition.y
+                };
+                
+                // Rotate the earth based on mouse movement
+                earth.rotation.y += deltaMove.x * 0.005;
+                earth.rotation.x += deltaMove.y * 0.005;
+                
+                // Limit vertical rotation
+                earth.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, earth.rotation.x));
+                
+                // Rotate satellites to maintain their relative positions
+                satellites.forEach(satellite => {
+                    // Get the original position
+                    const originalPos = satellite.userData.originalPosition.clone();
+                    
+                    // Apply the same rotation as the earth
+                    originalPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), earth.rotation.y);
+                    originalPos.applyAxisAngle(new THREE.Vector3(1, 0, 0), earth.rotation.x);
+                    
+                    // Update satellite position
+                    satellite.position.copy(originalPos);
+                    
+                    // Make satellite look at earth center
+                    satellite.lookAt(0, 0, 0);
+                });
+                
+                previousMousePosition = {
+                    x: event.clientX,
+                    y: event.clientY
+                };
+            }
+        }
+        
+        function onMouseUp(event) {
+            isDragging = false;
+        }
+        
+        function onClick(event) {
+            // Only handle as a click if it wasn't a drag
+            if (Math.abs(event.clientX - previousMousePosition.x) < 2 && 
+                Math.abs(event.clientY - previousMousePosition.y) < 2) {
+                handleObjectSelection(event);
+            }
+        }
+        
+        function onMouseWheel(event) {
+            event.preventDefault();
+            
+            // Adjust camera zoom
+            const zoomSpeed = 0.1;
+            const delta = event.deltaY > 0 ? 1 : -1;
+            
+            // Get the current distance and calculate new distance
+            const currentDistance = camera.position.z;
+            const newDistance = Math.max(3, Math.min(15, currentDistance + delta * zoomSpeed * currentDistance));
+            
+            // Update camera position
+            camera.position.z = newDistance;
+        }
+        
+        function onTouchStart(event) {
+            if (event.touches.length === 1) {
+                event.preventDefault();
+                isDragging = true;
+                previousMousePosition = {
+                    x: event.touches[0].clientX,
+                    y: event.touches[0].clientY
+                };
+                
+                // Store touch position for possible click
+                const canvasBounds = renderer.domElement.getBoundingClientRect();
+                mouse.x = ((event.touches[0].clientX - canvasBounds.left) / canvasBounds.width) * 2 - 1;
+                mouse.y = -((event.touches[0].clientY - canvasBounds.top) / canvasBounds.height) * 2 + 1;
+            }
+        }
+        
+        function onTouchMove(event) {
+            if (event.touches.length === 1 && isDragging) {
+                event.preventDefault();
+                
+                const deltaMove = {
+                    x: event.touches[0].clientX - previousMousePosition.x,
+                    y: event.touches[0].clientY - previousMousePosition.y
+                };
+                
+                // Rotate the earth based on touch movement
+                earth.rotation.y += deltaMove.x * 0.005;
+                earth.rotation.x += deltaMove.y * 0.005;
+                
+                // Limit vertical rotation
+                earth.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, earth.rotation.x));
+                
+                // Rotate satellites to maintain their relative positions
+                satellites.forEach(satellite => {
+                    // Get the original position
+                    const originalPos = satellite.userData.originalPosition.clone();
+                    
+                    // Apply the same rotation as the earth
+                    originalPos.applyAxisAngle(new THREE.Vector3(0, 1, 0), earth.rotation.y);
+                    originalPos.applyAxisAngle(new THREE.Vector3(1, 0, 0), earth.rotation.x);
+                    
+                    // Update satellite position
+                    satellite.position.copy(originalPos);
+                    
+                    // Make satellite look at earth center
+                    satellite.lookAt(0, 0, 0);
+                });
+                
+                previousMousePosition = {
+                    x: event.touches[0].clientX,
+                    y: event.touches[0].clientY
+                };
+            } else if (event.touches.length === 2) {
+                // Handle pinch-to-zoom
+                event.preventDefault();
+                
+                const touch1 = event.touches[0];
+                const touch2 = event.touches[1];
+                
+                const dist = Math.hypot(
+                    touch1.clientX - touch2.clientX,
+                    touch1.clientY - touch2.clientY
+                );
+                
+                if (this.previousTouchDistance) {
+                    const delta = this.previousTouchDistance - dist;
+                    
+                    // Adjust camera zoom
+                    const zoomSpeed = 0.005;
+                    const currentDistance = camera.position.z;
+                    const newDistance = Math.max(3, Math.min(15, currentDistance + delta * zoomSpeed * currentDistance));
+                    
+                    // Update camera position
+                    camera.position.z = newDistance;
+                }
+                
+                this.previousTouchDistance = dist;
+            }
+        }
+        
+        function onTouchEnd(event) {
+            if (event.touches.length === 0) {
+                // Check if it was a short tap (click)
+                if (isDragging && 
+                    Math.abs(event.changedTouches[0].clientX - previousMousePosition.x) < 10 && 
+                    Math.abs(event.changedTouches[0].clientY - previousMousePosition.y) < 10) {
+                    handleObjectSelection(event.changedTouches[0]);
+                }
+                
+                isDragging = false;
+                this.previousTouchDistance = null;
+            }
+        }
+        
+        function handleObjectSelection(event) {
+            // Update mouse position
+            const canvasBounds = renderer.domElement.getBoundingClientRect();
+            if (event.clientX !== undefined) {
+                // Mouse event
+                mouse.x = ((event.clientX - canvasBounds.left) / canvasBounds.width) * 2 - 1;
+                mouse.y = -((event.clientY - canvasBounds.top) / canvasBounds.height) * 2 + 1;
+            } else if (event.touches) {
+                // Touch event
+                mouse.x = ((event.touches[0].clientX - canvasBounds.left) / canvasBounds.width) * 2 - 1;
+                mouse.y = -((event.touches[0].clientY - canvasBounds.top) / canvasBounds.height) * 2 + 1;
+            }
+            
+            // Perform raycasting
+            raycaster.setFromCamera(mouse, camera);
+            
+            const intersects = raycaster.intersectObjects(scene.children, true);
+            
+            // Find if we hit a satellite
+            let hitSatellite = null;
+            for (let i = 0; i < intersects.length; i++) {
+                // Find the parent satellite group
+                let obj = intersects[i].object;
+                while (obj.parent && !obj.userData.satelliteData) {
+                    obj = obj.parent;
+                }
+                
+                if (obj.userData && obj.userData.satelliteData) {
+                    hitSatellite = obj;
+                    break;
+                }
+            }
+            
+            if (hitSatellite) {
+                // Select the satellite
+                selectedSatellite = hitSatellite;
+                
+                // Update info panel
+                const satData = selectedSatellite.userData.satelliteData;
+                satName.textContent = satData.name;
+                satPosition.textContent = `Position: ${satData.position.toFixed(1)}°${satData.position >= 0 ? 'E' : 'W'}`;
+                satOperator.textContent = `Operator: ${satData.operator}`;
+                satCoverage.textContent = `Coverage: ${satData.coverage.join(', ')}`;
+                satBands.textContent = `Frequency Bands: ${satData.bands.join(', ')}`;
+                
+                // Show info panel
+                infoPanel.classList.add('info-visible');
+            } else {
+                // Deselect if clicked on empty space
+                selectedSatellite = null;
+                infoPanel.classList.remove('info-visible');
+            }
+        }
+        
+        function updateLabels() {
+            // Update satellite labels
+            satellites.forEach((satellite, index) => {
+                if (index < satLabels.length) {
+                    // Get screen position
+                    const position = satellite.position.clone();
+                    position.project(camera);
+                    
+                    // Convert to screen coordinates
+                    const x = (position.x * 0.5 + 0.5) * window.innerWidth;
+                    const y = (- position.y * 0.5 + 0.5) * window.innerHeight;
+                    
+                    // Only show labels for satellites in front of Earth (z < 1)
+                    // and if they're in the viewport
+                    const label = satLabels[index];
+                    
+                    if (position.z < 1 && 
+                        x > 0 && x < window.innerWidth && 
+                        y > 0 && y < window.innerHeight) {
+                        label.style.display = 'block';
+                        label.style.left = x + 'px';
+                        label.style.top = y + 'px';
+                    } else {
+                        label.style.display = 'none';
+                    }
+                }
+            });
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Update satellite labels
+            updateLabels();
+            
+            // Highlight selected satellite if any
+            satellites.forEach(satellite => {
+                const satBody = satellite.children[0]; // The main body
+                if (satellite === selectedSatellite) {
+                    // Pulse effect for selected satellite
+                    const pulseFactor = 0.5 + 0.5 * Math.sin(Date.now() * 0.005);
+                    satBody.scale.set(1.5 + pulseFactor * 0.2, 1.5 + pulseFactor * 0.2, 1.5 + pulseFactor * 0.2);
+                } else {
+                    satBody.scale.set(1, 1, 1);
+                }
+            });
+            
+            // Render the scene
+            renderer.render(scene, camera);
+        }
+        
+        // Initialize when the page is loaded
+        window.addEventListener('load', init);
+    </script>
+</body>
+</html>
