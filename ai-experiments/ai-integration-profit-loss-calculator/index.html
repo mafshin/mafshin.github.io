@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Integration Profit/Loss Calculator</title>
+    <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .chart-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 2rem auto;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            padding: 1.5rem;
+            background-color: white;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 5px;
+            background: #e5e7eb;
+            outline: none;
+            -webkit-transition: .2s;
+            transition: opacity .2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6b7280;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #6b7280;
+            cursor: pointer;
+        }
+
+        input[type="range"]:focus::-webkit-slider-thumb {
+            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.3);
+        }
+
+        input[type="range"]:focus::-moz-range-thumb {
+            box-shadow: 0 0 0 3px rgba(107, 114, 128, 0.3);
+        }
+
+        /* Hide the default tooltip */
+        input[type="range"]::-webkit-slider-tooltip {
+            display: none;
+        }
+        input[type="range"]::-moz-range-tooltip {
+            display: none;
+        }
+
+        /* Show tooltip on hover and focus */
+        input[type="range"]:hover::-webkit-slider-tooltip,
+        input[type="range"]:focus::-webkit-slider-tooltip {
+            display: block;
+            position: absolute;
+            top: -28px;
+            left: calc(50% - 20px);
+            padding: 3px 8px;
+            background-color: #374151;
+            color: #fff;
+            font-size: 12px;
+            border-radius: 4px;
+            content: attr(data-value); /* Use data-value attribute */
+        }
+
+        input[type="range"]:hover::-moz-range-tooltip,
+        input[type="range"]:focus::-moz-range-tooltip {
+            display: block;
+            position: absolute;
+            top: -28px;
+            left: calc(50% - 20px);
+            padding: 3px 8px;
+            background-color: #374151;
+            color: #fff;
+            font-size: 12px;
+            border-radius: 4px;
+            content: attr(data-value); /* Use data-value attribute */
+        }
+
+    </style>
+</head>
+<body class="bg-gray-100 p-4 md:p-10">
+    <div class="container mx-auto bg-white rounded-lg shadow-md p-6 md:p-10">
+        <h1 class="text-2xl md:text-3xl font-semibold text-blue-600 text-center mb-6">AI Integration Profit/Loss Calculator</h1>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div>
+                <label for="employeeCount" class="block text-gray-700 text-sm font-bold mb-2">Number of Employees:</label>
+                <input type="number" id="employeeCount" value="50" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+                <label for="averageSalary" class="block text-gray-700 text-sm font-bold mb-2">Average Monthly Salary per Employee (€):</label>
+                <input type="number" id="averageSalary" value="5000" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+                <label for="aiCostPerEmployee" class="block text-gray-700 text-sm font-bold mb-2">Monthly AI Services Cost per Employee (€):</label>
+                <input type="number" id="aiCostPerEmployee" value="100" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+                <label for="workingDays" class="block text-gray-700 text-sm font-bold mb-2">Number of Working Days per Month:</label>
+                <input type="number" id="workingDays" value="20" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+            </div>
+            <div>
+                <label for="productivityGain" class="block text-gray-700 text-sm font-bold mb-2">Productivity Gain:</label>
+                <div class="flex items-center">
+                    <input type="range" id="productivityGain" min="0" max="400" value="200" step="20" class="w-full" data-value="200%">
+                    <span id="productivityValue" class="ml-2 text-gray-700 font-medium text-sm">200%</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="chart-container">
+            <canvas id="profitLossChart"></canvas>
+        </div>
+        <div class="mt-8 overflow-x-auto">
+            <table class="min-w-full bg-white border border-gray-300 rounded-md shadow-sm">
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Calculation
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Formula
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Result
+                        </th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Current Costs</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" id="currentCostsFormula"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" id="currentCostsResult"></td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Current + AI Costs</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" id="currentPlusAICostsFormula"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" id="currentPlusAICostsResult"></td>
+                    </tr>
+                    <tr>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">Current + AI Costs + Productivity</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500" id="currentPlusAIPlusProductivityFormula"></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium" id="currentPlusAIPlusProductivityResult"></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-center">
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800">Potential Savings Per Day:</h3>
+                <p id="lossPerDay" class="text-xl text-green-600 font-bold">Loading...</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800">Potential Savings Per Month:</h3>
+                <p id="lossPerMonth" class="text-xl text-green-600 font-bold">Loading...</p>
+            </div>
+            <div>
+                <h3 class="text-lg font-semibold text-gray-800">Potential Savings Per Year:</h3>
+                <p id="lossPerYear" class="text-xl text-green-600 font-bold">Loading...</p>
+            </div>
+        </div>
+        <div class="chart-container mt-8">
+            <canvas id="productivityLineChart"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const employeeCountInput = document.getElementById('employeeCount');
+        const averageSalaryInput = document.getElementById('averageSalary');
+        const aiCostPerEmployeeInput = document.getElementById('aiCostPerEmployee');
+        const workingDaysInput = document.getElementById('workingDays');
+        const productivityGainInput = document.getElementById('productivityGain');
+        const productivityValueDisplay = document.getElementById('productivityValue');
+        const lossPerDayDisplay = document.getElementById('lossPerDay');
+        const lossPerMonthDisplay = document.getElementById('lossPerMonth');
+        const lossPerYearDisplay = document.getElementById('lossPerYear');
+
+        const currentCostsFormulaDisplay = document.getElementById('currentCostsFormula');
+        const currentCostsResultDisplay = document.getElementById('currentCostsResult');
+        const currentPlusAICostsFormulaDisplay = document.getElementById('currentPlusAICostsFormula');
+        const currentPlusAICostsResultDisplay = document.getElementById('currentPlusAICostsResult');
+        const currentPlusAIPlusProductivityFormulaDisplay = document.getElementById('currentPlusAIPlusProductivityFormula');
+        const currentPlusAIPlusProductivityResultDisplay = document.getElementById('currentPlusAIPlusProductivityResult');
+
+
+        const ctx = document.getElementById('profitLossChart').getContext('2d');
+        let profitLossChart;
+        const ctxLine = document.getElementById('productivityLineChart').getContext('2d');
+        let productivityLineChart;
+
+        function createChart(initialData) {
+            const employeeCount = parseFloat(employeeCountInput.value);
+            const averageSalary = parseFloat(averageSalaryInput.value);
+            const aiCostPerEmployee = parseFloat(aiCostPerEmployeeInput.value);
+            const productivityGain = parseFloat(productivityGainInput.value) / 100;
+            const totalSalary = employeeCount * averageSalary;
+            const totalAICost = employeeCount * aiCostPerEmployee;
+
+            profitLossChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Current Costs', 'Current + AI Costs', 'Current + AI Costs + Productivity'],
+                    datasets: [{
+                        label: 'Amount (€)',
+                        data: [
+                            initialData[0],
+                            initialData[1],
+                            initialData[2]
+                        ],
+                        backgroundColor: [
+                            'rgba(255, 99, 132, 0.6)',
+                            'rgba(54, 162, 235, 0.6)',
+                            'rgba(75, 192, 192, 0.6)',
+                        ],
+                        borderColor: [
+                            'rgba(255, 99, 132, 1)',
+                            'rgba(54, 162, 235, 1)',
+                            'rgba(75, 192, 192, 1)',
+                        ],
+                        borderWidth: 1,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            stacked: true,
+                        },
+                        y: {
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return '€' + value.toLocaleString();
+                                },
+                            },
+                            grid: {
+                                color: (context) => context.tick.value === 0 ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.1)',
+                                lineWidth: (context) => context.tick.value === 0 ? 2 : 1,
+                            }
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: 12,
+                                },
+                            },
+                        },
+                        tooltip: {
+                            enabled: true,
+                           callbacks: {
+                                title: function(context) {
+                                     return context[0].label;
+                                },
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label += '€' + context.parsed.y.toLocaleString();
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                    },
+                },
+            });
+        }
+        function createLineChart(initialData) {
+            const productivityValues = [];
+            for (let i = 0; i <= 400; i += 20) {
+                productivityValues.push(i);
+            }
+            const gradient = ctxLine.createLinearGradient(0, 0, 0, 400);
+            gradient.addColorStop(0, 'rgba(75, 192, 192, 0.2)');
+            gradient.addColorStop(1, 'rgba(75, 192, 192, 0.2)');
+            productivityLineChart = new Chart(ctxLine, {
+                type: 'line',
+                data: {
+                    labels: productivityValues,
+                    datasets: [{
+                        label: 'Savings (€)',
+                        data: initialData,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 2,
+                        fill: true,
+                        pointRadius: 0
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: {
+                            title: {
+                                display: true,
+                                text: 'Savings (€)',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            ticks: {
+                                stepSize: 50
+                            },
+                            grid: {
+                                color: (context) => context.tick.value === 0 ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.1)',
+                                lineWidth: (context) => context.tick.value === 0 ? 2 : 1,
+                            }
+                        },
+                        y: {
+                            title: {
+                                display: true,
+                                text: 'Productivity Gain (%)',
+                                font: {
+                                    size: 12
+                                }
+                            },
+                            beginAtZero: true,
+                            ticks: {
+                                callback: function (value) {
+                                    return  value.toLocaleString() + '%';
+                                }
+                            },
+
+                        },
+                    },
+                    plugins: {
+                        legend: {
+                            display: false,
+                            position: 'bottom',
+                            labels: {
+                                font: {
+                                    size: 12,
+                                },
+                            },
+                        },
+                        tooltip: {
+                            enabled: true,
+                            callbacks: {
+                                label: function(context) {
+                                    let label = context.dataset.label || '';
+                                    if (label) {
+                                        label += ': ';
+                                    }
+                                    if (context.parsed.y !== null) {
+                                        label +=  context.parsed.y.toLocaleString() + '%';
+                                    }
+                                    return label;
+                                }
+                            }
+                        },
+                    }
+                }
+            });
+        }
+
+        function calculateLoss() {
+            const employeeCount = parseFloat(employeeCountInput.value);
+            const averageSalary = parseFloat(averageSalaryInput.value);
+            const aiCostPerEmployee = parseFloat(aiCostPerEmployeeInput.value);
+            const workingDays = parseFloat(workingDaysInput.value);
+            const productivityGain = parseFloat(productivityGainInput.value) / 100;
+
+            productivityValueDisplay.textContent = `${productivityGain * 100}%`;
+            productivityGainInput.setAttribute('data-value', `${productivityGain * 100}%`);
+
+
+            const totalSalary = employeeCount * averageSalary;
+            const totalAICost = employeeCount * aiCostPerEmployee;
+            const dailySalary = totalSalary / workingDays;
+
+            const currentCosts = -totalSalary;
+            const aiCosts = -totalAICost;
+            const potentialGain = totalSalary * productivityGain;
+
+            const currentAndAICosts = currentCosts + aiCosts;
+            const currentAndAICostsAndProductivity = currentCosts + aiCosts + potentialGain;
+
+
+            const dailySavings = potentialGain / workingDays;
+            const monthlySavings = dailySavings * workingDays;
+            const yearlySavings = monthlySavings * 12;
+
+            lossPerDayDisplay.textContent =  dailySavings > 0 ? '€' + dailySavings.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '€0';
+            lossPerMonthDisplay.textContent =  monthlySavings > 0 ? '€' + monthlySavings.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '€0';
+            lossPerYearDisplay.textContent = yearlySavings > 0? '€' + yearlySavings.toLocaleString(undefined, { maximumFractionDigits: 2 }) : '€0';
+
+            currentCostsFormulaDisplay.textContent = `- (Employees x Average Salary) `;
+            currentCostsResultDisplay.textContent = ` - €${totalSalary.toLocaleString()}`;
+            currentCostsResultDisplay.style.color = 'red';
+            currentPlusAICostsFormulaDisplay.textContent = `Current Costs + (Employees x AI Cost)`;
+            currentPlusAICostsResultDisplay.textContent = `- €${(totalSalary + totalAICost).toLocaleString()}`;
+            currentPlusAICostsResultDisplay.style.color = 'red';
+            currentPlusAIPlusProductivityFormulaDisplay.textContent = `(Current Costs + AI Costs) + (Total Salary x Productivity Gain)`;
+            currentPlusAIPlusProductivityResultDisplay.textContent =  (currentAndAICostsAndProductivity > 0 ? '€' : '-€') + Math.abs(currentAndAICostsAndProductivity).toLocaleString();
+            currentPlusAIPlusProductivityResultDisplay.style.color = currentAndAICostsAndProductivity > 0 ? 'green' : 'red';
+            const lineChartData = [];
+            for (let i = 0; i <= 400; i += 20) {
+                const currentProductivityGain = i / 100;
+                const currentPotentialGain = totalSalary * currentProductivityGain;
+                const currentResult =  currentPotentialGain;
+                lineChartData.push(currentResult);
+            }
+            return [currentCosts, currentAndAICosts, currentAndAICostsAndProductivity,lineChartData,dailySavings,monthlySavings,yearlySavings];
+        }
+
+        function updateChart() {
+            const newData = calculateLoss();
+            if (profitLossChart) {
+                profitLossChart.data.datasets[0].data = [
+                    newData[0],
+                    newData[1],
+                    newData[2]
+                ];
+                profitLossChart.update();
+            } else {
+                createChart([newData[0],newData[1],newData[2]]);
+            }
+            if (productivityLineChart) {
+                productivityLineChart.data.datasets[0].data = newData[3];
+                productivityLineChart.update();
+            } else {
+                createLineChart(newData[3]);
+            }
+             lossPerDayDisplay.textContent = newData[4] > 0 ? '€' + newData[4].toLocaleString(undefined, { maximumFractionDigits: 2 }) : '€0';
+            lossPerMonthDisplay.textContent = newData[5] > 0 ? '€' + newData[5].toLocaleString(undefined, { maximumFractionDigits: 2 }) : '€0';
+            lossPerYearDisplay.textContent = newData[6] > 0 ? '€' + newData[6].toLocaleString(undefined, { maximumFractionDigits: 2 }) : '€0';
+        }
+
+        employeeCountInput.addEventListener('input', updateChart);
+        averageSalaryInput.addEventListener('input', updateChart);
+        aiCostPerEmployeeInput.addEventListener('input', updateChart);
+        workingDaysInput.addEventListener('input', updateChart);
+        productivityGainInput.addEventListener('input', () => {
+            const productivityGainValue = productivityGainInput.value;
+            const roundedValue = Math.round(productivityGainValue / 20) * 20;
+            productivityGainInput.value = roundedValue;
+            productivityValueDisplay.textContent = `${roundedValue}%`;
+            productivityGainInput.setAttribute('data-value', `${roundedValue}%`);
+            updateChart();
+        });
+
+        window.onload = function() {
+            updateChart();
+        };
+    </script>
+</body>
+</html>
