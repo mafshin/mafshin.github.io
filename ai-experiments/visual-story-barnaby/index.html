@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>بز کوچولو سفید | Barnaby</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="book">
+        <div class="page-container">
+            <!-- Cover/Title Slide -->
+            <div class="slide cover active">
+                <div class="page-content">
+                    <h1 class="book-title">بز کوچولو سفید</h1>
+                    <div class="cover-image">
+                        <img src="image000.jpeg" alt="بز کوچولو بارنابی">
+                    </div>
+                    <div class="author">داستانی برای کودکان</div>
+                </div>
+            </div>
+
+            <!-- Story Slides -->
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image000.jpeg" alt="بز کوچولو بارنابی">
+                    <p>بارنابی، بز کوچولوی سفید، روحی کنجکاو داشت. پشمش به سفیدی خامه تازه بود و دم کوچکش با هر دیدن هر منظره جدید، تکان می‌خورد.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image001.jpeg" alt="بارنابی و کفشدوزک روی گل آفتابگردان">
+                    <p>یک صبح آفتابی، در حالی که مادرش مشغول خوردن علف بود، بارنابی چیز جدیدی دید – یک کفشدوزک قرمز روشن که روی یک گل آفتابگردان غول‌پیکر می‌خزید.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image002.jpeg" alt="بارنابی در باغچه گوجه فرنگی">
+                    <p>کفشدوزک از روی گل آفتابگردان پر زد و روی یک گوجه فرنگی آبدار و قرمز در باغچه فرود آمد. بارنابی با احتیاط از میان ردیف‌های گیاهان برگدار نوک پا راه رفت.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image003.jpeg" alt="بارنابی کنار نهر">
+                    <p>از باغچه گوجه فرنگی، کفشدوزک به سمت یک نهر جوشان که از میان مزرعه می‌گذشت، پرواز کرد. بارنابی تا به حال اینقدر به آب نزدیک نشده بود.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image004.jpeg" alt="بارنابی و جوجه">
+                    <p>ناگهان، یک بارقه زرد روشن چشم بارنابی را گرفت. یک جوجه کرکی نزدیک نهر نوک می‌زد! کفشدوزک روی پشت جوجه کوچولو پریده بود.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image005.jpeg" alt="بارنابی در مزرعه گندم">
+                    <p>سپس کفشدوزک دوباره پرواز کرد و بر فراز مزرعه‌ای از گندم‌های بلند و طلایی به پرواز درآمد. بارنابی به دنبال او دوید، پاهای کوچکش با تمام سرعت حرکت می‌کردند.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image006.jpeg" alt="بارنابی نزدیک انبار قرمز">
+                    <p>سرانجام، کفشدوزک جلوی درب یک انبار بزرگ با دیوارهای قرمز رنگ فرود آمد، این بزرگترین ساختمانی بود که بارنابی تا به حال از نزدیک دیده بود.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image007.jpeg" alt="مادر بارنابی">
+                    <p>ناگهان، بارنابی یک صدای آشنا شنید: "بَ بَ!" این مادرش بود که داشت دنبالش می‌گشت.</p>
+                </div>
+            </div>
+
+            <div class="slide">
+                <div class="page-content">
+                    <img src="image008.jpeg" alt="بارنابی و مادرش در مزرعه">
+                    <p>بارنابی به سمت مادرش دوید، کمی خسته اما بسیار خوشحال بود. او تمام ماجراجویی‌ هایی که در آن روز با کفشدوزک داشت را برای مادرش تعریف کرد.</p>
+                </div>
+            </div>
+
+            <!-- The End Slide -->
+            <div class="slide">
+                <div class="page-content end-page">
+                    <h2>پایان</h2>
+                    <p class="end-message">امیدوارم از داستان بارنابی و کفشدوزک لذت برده باشید!</p>
+                    <div class="sheep-icon">🐑</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Controls -->
+        <div class="progress-container">
+            <div class="progress-bar" id="progress-bar"></div>
+        </div>
+        <div class="magic-wand" id="magic-wand"></div>
+        <div class="controls">
+            <button id="prev-btn" class="nav-btn">&lt;</button>
+            <div id="auto-btn" class="nav-btn auto-btn">پخش</div>
+            <button id="next-btn" class="nav-btn">&gt;</button>
+        </div>
+    </div>
+
+    <script>
+        let currentSlide = 0;
+        const slides = document.querySelectorAll(".slide");
+        const totalSlides = slides.length;
+        const nextBtn = document.getElementById("next-btn");
+        const prevBtn = document.getElementById("prev-btn");
+        const autoBtn = document.getElementById("auto-btn");
+        const progressBar = document.getElementById("progress-bar");
+        const magicWand = document.getElementById("magic-wand");
+        
+        let autoPlayInterval;
+        let isAutoPlaying = false;
+        const autoPlayDuration = 20000; // 5 seconds per slide
+        let progress = 0;
+        let progressInterval;
+
+        // Initialize
+        updateSlideVisibility();
+
+        // Event listeners
+        nextBtn.addEventListener("click", () => {
+            if (isAutoPlaying) toggleAutoPlay();
+            nextSlide();
+        });
+        
+        prevBtn.addEventListener("click", () => {
+            if (isAutoPlaying) toggleAutoPlay();
+            prevSlide();
+        });
+        
+        autoBtn.addEventListener("click", () => {
+            toggleAutoPlay();
+
+            if(isAutoPlaying)
+            nextSlide();
+        })
+
+        // Track mouse position for magic wand
+        document.addEventListener("mousemove", (e) => {
+            if (magicWand.classList.contains("active")) {
+                magicWand.style.left = `${e.clientX}px`;
+                magicWand.style.top = `${e.clientY}px`;
+            }
+        });
+
+        // Key navigation
+        document.addEventListener("keydown", (e) => {
+            if (e.key === "ArrowRight") {
+                showMagicWand();
+                prevSlide();
+                if (isAutoPlaying) toggleAutoPlay();
+            }
+            if (e.key === "ArrowLeft") {
+                showMagicWand();
+                nextSlide();
+                if (isAutoPlaying) toggleAutoPlay();
+            }
+            if (e.key === " ") { // Spacebar
+                toggleAutoPlay();
+            }
+        });
+
+        function toggleAutoPlay() {
+            isAutoPlaying = !isAutoPlaying;
+            
+            if (isAutoPlaying) {
+                autoBtn.innerHTML = "توقف";
+                startProgressBar();
+                autoPlayInterval = setInterval(() => {
+                    if (currentSlide < totalSlides - 1) {
+                        nextSlide();
+                        startProgressBar();
+                    } else {
+                        toggleAutoPlay(); // Stop when we reach the end
+                    }
+                }, autoPlayDuration);
+            } else {
+                autoBtn.innerHTML = "پخش";
+                clearInterval(autoPlayInterval);
+                clearInterval(progressInterval);
+                progressBar.style.width = "0%";
+            }
+        }
+
+        function startProgressBar() {
+            clearInterval(progressInterval);
+            progress = 0;
+            progressBar.style.width = "0%";
+            
+            const updateFrequency = 50; // Update every 50ms for smooth animation
+            const increment = (updateFrequency / autoPlayDuration) * 100;
+            
+            progressInterval = setInterval(() => {
+                progress += increment;
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress >= 100) {
+                    clearInterval(progressInterval);
+                }
+            }, updateFrequency);
+        }
+
+        function nextSlide() {
+            if (currentSlide < totalSlides - 1) {
+                slides[currentSlide].classList.remove("active");
+                slides[currentSlide].classList.add("leaving");
+                
+                // Add magic effect to the page content
+                const currentContent = slides[currentSlide].querySelector('.page-content');
+                currentContent.style.animation = "pageGlow 1s ease";
+                
+                setTimeout(() => {
+                    slides[currentSlide].classList.remove("leaving");
+                    currentContent.style.animation = "";
+                    currentSlide++;
+                    updateSlideVisibility();
+                }, 500);
+            }
+        }
+
+        function prevSlide() {
+            if (currentSlide > 0) {
+                slides[currentSlide].classList.remove("active");
+                slides[currentSlide].classList.add("entering");
+                
+                // Add magic effect to the page content
+                const currentContent = slides[currentSlide].querySelector('.page-content');
+                currentContent.style.animation = "pageGlow 1s ease";
+                
+                setTimeout(() => {
+                    slides[currentSlide].classList.remove("entering");
+                    currentContent.style.animation = "";
+                    currentSlide--;
+                    updateSlideVisibility();
+                }, 500);
+            }
+        }
+
+        function updateSlideVisibility() {
+            slides.forEach((slide, index) => {
+                slide.classList.remove("active");
+            });
+            
+            slides[currentSlide].classList.add("active");
+            
+            // Update button state
+            prevBtn.disabled = currentSlide === 0;
+            nextBtn.disabled = currentSlide === totalSlides - 1;
+            
+            // Update progress bar based on position
+            const percentComplete = ((currentSlide) / (totalSlides - 1)) * 100;
+            progressBar.style.width = `${percentComplete}%`;
+        }
+    </script>
+</body>
+</html>
