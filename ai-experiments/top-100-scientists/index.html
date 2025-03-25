@@ -559,7 +559,7 @@
             >
               <div 
                 class="card-image" 
-                :style="{ backgroundImage: `url({scientist.imageUrl})` }"
+                :style="{ backgroundImage: `url(${scientist.imageUrl})` }"
               ></div>
               <div class="card-content">
                 <h3 class="scientist-name">{{ scientist.name }}</h3>
@@ -704,6 +704,10 @@
           selectedCountry.value = '';
           yearFrom.value = minYear.value;
           yearTo.value = maxYear.value;
+        }
+
+        function getImageUrl(scientist) {
+          return scientist.imageUrl || 'https://via.placeholder.com/300';
         }
 
         function getWikipediaLink(scientist) {
