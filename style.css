@@ -1,0 +1,111 @@
+/* Import Inter font */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+/* Custom scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 10px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Project card hover effects */
+.project-card {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+  cursor: pointer;
+}
+
+.project-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+}
+
+/* Panel animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.lg\:w-1\/4, .lg\:w-3\/4 {
+  animation: fadeIn 0.5s ease-out;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .project-card {
+    max-width: 100%;
+  }
+}
+
+/* Form element focus styles */
+input:focus, select:focus, button:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.2);
+}
+
+/* Badge styles */
+.bg-indigo-100 {
+  background-color: rgba(224, 231, 255, 0.6);
+}
+
+.text-indigo-800 {
+  color: #4338ca;
+}
+
+/* Transitions for filter changes */
+.grid {
+  transition: opacity 0.3s ease;
+}
+
+/* Header gradient animation */
+.bg-gradient-to-r {
+  background-size: 200% 200%;
+  animation: gradientAnimation 8s ease infinite;
+}
+
+@keyframes gradientAnimation {
+  0% { background-position: 0% 50% }
+  50% { background-position: 100% 50% }
+  100% { background-position: 0% 50% }
+}
+
+/* Card image overlay for better text readability */
+.relative h-48::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 40%;
+  background: linear-gradient(to top, rgba(0,0,0,0.1), transparent);
+  pointer-events: none;
+}
+
+/* Mobile optimization */
+@media (max-width: 640px) {
+  .container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+  
+  .grid {
+    gap: 1rem;
+  }
+}

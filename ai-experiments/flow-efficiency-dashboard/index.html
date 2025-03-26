@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flow Efficiency Manager</title>
+  <!-- CSS Dependencies -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    :root {
+      --primary-color: #3f51b5;
+      --secondary-color: #f50057;
+      --success-color: #4caf50;
+      --warning-color: #ff9800;
+      --info-color: #2196f3;
+      --light-gray: #f5f5f5;
+      --dark-gray: #424242;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f9f9f9;
+      color: #333;
+    }
+    
+    .app-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 0 15px;
+    }
+    
+    .navbar-custom {
+      background-color: var(--primary-color);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .navbar-brand {
+      font-weight: bold;
+      color: white !important;
+    }
+    
+    .card {
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+      transition: transform 0.2s ease;
+      margin-bottom: 1.5rem;
+      border: none;
+    }
+    
+    .card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 15px rgba(0,0,0,0.1);
+    }
+    
+    .card-header {
+      background-color: white;
+      border-bottom: 1px solid rgba(0,0,0,0.05);
+      font-weight: 600;
+      padding: 1rem 1.25rem;
+    }
+    
+    .metric-card {
+      text-align: center;
+      padding: 1.5rem;
+    }
+    
+    .metric-value {
+      font-size: 2.5rem;
+      font-weight: bold;
+      margin: 0.5rem 0;
+      color: var(--primary-color);
+    }
+    
+    .metric-title {
+      font-size: 1rem;
+      color: #666;
+      margin-bottom: 0;
+    }
+    
+    .team-item {
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      background-color: white;
+      border-left: 4px solid var(--primary-color);
+      transition: all 0.2s ease;
+    }
+    
+    .team-item:hover {
+      background-color: #f8f9fa;
+      cursor: pointer;
+    }
+    
+    .team-item.active {
+      border-left-color: var(--secondary-color);
+      background-color: #f8f9fa;
+    }
+    
+    .chart-container {
+      position: relative;
+      height: 300px;
+      width: 100%;
+      max-height: 300px;
+      overflow: hidden;
+    }
+    
+    .form-label {
+      font-weight: 500;
+    }
+    
+    .btn-primary {
+      background-color: var(--primary-color);
+      border-color: var(--primary-color);
+    }
+    
+    .btn-secondary {
+      background-color: var(--secondary-color);
+      border-color: var(--secondary-color);
+    }
+    
+    .efficiency-high {
+      color: var(--success-color);
+    }
+    
+    .efficiency-medium {
+      color: var(--warning-color);
+    }
+    
+    .efficiency-low {
+      color: var(--secondary-color);
+    }
+    
+    .status-badge {
+      font-size: 0.75rem;
+      padding: 0.25rem 0.5rem;
+      border-radius: 12px;
+    }
+    
+    .info-tooltip {
+      cursor: pointer;
+      color: var(--info-color);
+    }
+    
+    @media (max-width: 768px) {
+      .metric-value {
+        font-size: 1.8rem;
+      }
+      
+      .chart-container {
+        height: 250px;
+      }
+    }
+    
+    /* Custom switch styling */
+    .form-switch .form-check-input {
+      width: 3em;
+      height: 1.5em;
+    }
+    
+    /* Tabbed navigation */
+    .nav-tabs .nav-link {
+      border: none;
+      color: #666;
+      font-weight: 500;
+    }
+    
+    .nav-tabs .nav-link.active {
+      color: var(--primary-color);
+      border-bottom: 2px solid var(--primary-color);
+      background-color: transparent;
+    }
+    
+    /* Animations */
+    .fade-enter-active, .fade-leave-active {
+      transition: opacity 0.3s;
+    }
+    .fade-enter-from, .fade-leave-to {
+      opacity: 0;
+    }
+    
+    /* Loading spinner */
+    .loading-spinner {
+      display: inline-block;
+      width: 2rem;
+      height: 2rem;
+      border: 3px solid rgba(0,0,0,0.1);
+      border-radius: 50%;
+      border-top-color: var(--primary-color);
+      animation: spin 1s ease-in-out infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Progress bars */
+    .progress {
+      height: 10px;
+      border-radius: 5px;
+    }
+    
+    .progress-thin {
+      height: 6px;
+    }
+    
+    /* Comparative view */
+    .comparison-graph-container {
+      margin-top: 2rem;
+      background-color: white;
+      padding: 1.5rem;
+      border-radius: 8px;
+    }
+    
+    /* Historical data view */
+    .historical-data-container {
+      height: 350px;
+      max-height: 350px;
+      overflow: hidden;
+    }
+    
+    /* Task item styling */
+    .task-item {
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 8px;
+      border-left: 3px solid #ddd;
+      background-color: white;
+    }
+    
+    .task-item.value-adding {
+      border-left-color: var(--success-color);
+    }
+    
+    .task-item.waiting {
+      border-left-color: var(--warning-color);
+    }
+    
+    .task-item.blocked {
+      border-left-color: var(--secondary-color);
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom mb-4">
+      <div class="container-fluid">
+        <a class="navbar-brand" href="#">
+          <i class="fas fa-chart-line me-2"></i>
+          Flow Efficiency Manager <span style="font-size:14px; font-weight: normal;">by Mohsen Afshin</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+          <ul class="navbar-nav ms-auto">
+            <li class="nav-item">
+              <a class="nav-link active" href="#"><i class="fas fa-tachometer-alt me-1"></i> Dashboard</a>
+            </li>
+            <li class="nav-item">
+              <a class="nav-link" href="#"><i class="fas fa-cog me-1"></i> Settings</a>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+    
+    <div class="app-container">
+      <!-- Main Content -->
+      <div class="row mb-4">
+        <div class="col-md-8">
+          <h1 class="mb-3">Team Flow Efficiency Dashboard</h1>
+          <p class="text-muted">
+            Monitor and analyze team efficiency metrics in real-time. Compare performance across teams 
+            and track improvement over time.
+          </p>
+        </div>
+        <div class="col-md-4 text-md-end">
+          <div class="d-flex justify-content-md-end align-items-center">
+            <div class="form-check form-switch me-3">
+              <input class="form-check-input" type="checkbox" id="realtimeSwitch" v-model="realtimeUpdates">
+              <label class="form-check-label" for="realtimeSwitch">Real-time updates</label>
+            </div>
+            <button class="btn btn-primary" @click="refreshData">
+              <i class="fas fa-sync-alt me-1"></i> Refresh
+            </button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Summary Cards -->
+      <div class="row mb-4">
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="card metric-card">
+            <div class="metric-title">Average Flow Efficiency</div>
+            <div class="metric-value" :class="getEfficiencyClass(overallFlowEfficiency)">
+              {{ overallFlowEfficiency }}%
+            </div>
+            <div class="text-muted small">All teams</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="card metric-card">
+            <div class="metric-title">Highest Efficiency</div>
+            <div class="metric-value efficiency-high">{{ highestEfficiency.value }}%</div>
+            <div class="text-muted small">{{ highestEfficiency.team }}</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6 mb-3 mb-md-0">
+          <div class="card metric-card">
+            <div class="metric-title">Most Improved</div>
+            <div class="metric-value">
+              <i class="fas fa-arrow-up text-success me-1"></i> {{ mostImproved.value }}%
+            </div>
+            <div class="text-muted small">{{ mostImproved.team }}</div>
+          </div>
+        </div>
+        <div class="col-md-3 col-sm-6">
+          <div class="card metric-card">
+            <div class="metric-title">Total Teams</div>
+            <div class="metric-value">{{ teams.length }}</div>
+            <div class="text-muted small">Active teams</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row">
+        <!-- Team List Sidebar -->
+        <div class="col-md-3 mb-4 mb-md-0">
+          <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+              <span>Teams</span>
+              <button class="btn btn-sm btn-primary" @click="showAddTeamModal = true">
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+            <div class="card-body p-2">
+              <div class="input-group mb-3">
+                <span class="input-group-text"><i class="fas fa-search"></i></span>
+                <input type="text" class="form-control" placeholder="Search teams..." v-model="teamSearch">
+              </div>
+              <div v-if="filteredTeams.length > 0">
+                <div 
+                  v-for="team in filteredTeams" 
+                  :key="team.id" 
+                  class="team-item" 
+                  :class="{ active: selectedTeam && selectedTeam.id === team.id }"
+                  @click="selectTeam(team)"
+                >
+                  <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                      <div class="fw-bold">{{ team.name }}</div>
+                      <div class="small text-muted">{{ team.members }} members</div>
+                    </div>
+                    <div>
+                      <span 
+                        class="badge rounded-pill" 
+                        :class="getEfficiencyBadgeClass(team.flowEfficiency)"
+                      >
+                        {{ team.flowEfficiency }}%
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-center py-4 text-muted">
+                <i class="fas fa-search mb-2"></i>
+                <p>No teams found</p>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Main Content Area -->
+        <div class="col-md-9">
+          <div class="card mb-4">
+            <div class="card-header">
+              <ul class="nav nav-tabs card-header-tabs">
+                <li class="nav-item">
+                  <a class="nav-link active" href="#" @click.prevent="currentTab = 'overview'">Overview</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#" @click.prevent="currentTab = 'details'">Details</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#" @click.prevent="currentTab = 'tasks'">Tasks</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#" @click.prevent="currentTab = 'history'">History</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="#" @click.prevent="currentTab = 'compare'">Compare</a>
+                </li>
+              </ul>
+            </div>
+            <div class="card-body">
+              <!-- Overview Tab -->
+              <div v-if="currentTab === 'overview' && selectedTeam">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h3>{{ selectedTeam.name }} Overview</h3>
+                  <button class="btn btn-sm btn-outline-primary" @click="showAddTaskModal = true">
+                    <i class="fas fa-plus me-1"></i> Add Task
+                  </button>
+                </div>
+                
+                <div class="row mb-4">
+                  <div class="col-md-4">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h5 class="card-title">Flow Efficiency</h5>
+                        <div class="display-4 fw-bold mb-3" :class="getEfficiencyClass(selectedTeam.flowEfficiency)">
+                          {{ selectedTeam.flowEfficiency }}%
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                          <span>Previous period:</span>
+                          <span>{{ selectedTeam.previousEfficiency }}%</span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                          <span>Change:</span>
+                          <span :class="selectedTeam.efficiencyChange >= 0 ? 'text-success' : 'text-danger'">
+                            <i :class="selectedTeam.efficiencyChange >= 0 ? 'fas fa-arrow-up' : 'fas fa-arrow-down'"></i>
+                            {{ Math.abs(selectedTeam.efficiencyChange) }}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-8">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h5 class="card-title">Time Distribution</h5>
+                        <div style="height: 250px;">
+                          <canvas id="timeDistributionChart" ref="timeDistributionChart"></canvas>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-12">
+                    <div class="card">
+                      <div class="card-body">
+                        <h5 class="card-title">Efficiency Trend (Last 30 Days)</h5>
+                        <div style="height: 300px;">
+                          <canvas id="efficiencyTrendChart" ref="efficiencyTrendChart"></canvas>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Details Tab -->
+              <div v-else-if="currentTab === 'details' && selectedTeam">
+                <h3 class="mb-4">{{ selectedTeam.name }} Details</h3>
+                
+                <div class="row mb-4">
+                  <div class="col-lg-6">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h5 class="card-title">Team Information</h5>
+                        <div class="mb-3">
+                          <label class="fw-bold">Team Name:</label>
+                          <p>{{ selectedTeam.name }}</p>
+                        </div>
+                        <div class="mb-3">
+                          <label class="fw-bold">Department:</label>
+                          <p>{{ selectedTeam.department }}</p>
+                        </div>
+                        <div class="mb-3">
+                          <label class="fw-bold">Team Members:</label>
+                          <p>{{ selectedTeam.members }}</p>
+                        </div>
+                        <div class="mb-3">
+                          <label class="fw-bold">Team Lead:</label>
+                          <p>{{ selectedTeam.lead }}</p>
+                        </div>
+                        <div>
+                          <label class="fw-bold">Created On:</label>
+                          <p>{{ selectedTeam.createdDate }}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-lg-6">
+                    <div class="card h-100">
+                      <div class="card-body">
+                        <h5 class="card-title">Efficiency Breakdown</h5>
+                        <div class="mb-3">
+                          <div class="d-flex justify-content-between">
+                            <span>Value-Adding Time:</span>
+                            <span class="fw-bold">{{ selectedTeam.valueAddingTime }}h</span>
+                          </div>
+                          <div class="progress mt-1">
+                            <div 
+                              class="progress-bar bg-success" 
+                              :style="`width: ${selectedTeam.flowEfficiency}%`"
+                            ></div>
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <div class="d-flex justify-content-between">
+                            <span>Waiting Time:</span>
+                            <span class="fw-bold">{{ selectedTeam.waitingTime }}h</span>
+                          </div>
+                          <div class="progress mt-1">
+                            <div 
+                              class="progress-bar bg-warning" 
+                              :style="`width: ${100 - selectedTeam.flowEfficiency}%`"
+                            ></div>
+                          </div>
+                        </div>
+                        <div class="mb-3">
+                          <div class="d-flex justify-content-between">
+                            <span>Total Lead Time:</span>
+                            <span class="fw-bold">{{ selectedTeam.totalLeadTime }}h</span>
+                          </div>
+                        </div>
+                        <hr>
+                        <div class="mb-3">
+                          <div class="d-flex justify-content-between">
+                            <span>Completed Tasks:</span>
+                            <span class="fw-bold">{{ selectedTeam.completedTasks }}</span>
+                          </div>
+                        </div>
+                        <div>
+                          <div class="d-flex justify-content-between">
+                            <span>Average Task Lead Time:</span>
+                            <span class="fw-bold">{{ selectedTeam.avgTaskLeadTime }}h</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="card mb-4">
+                  <div class="card-body">
+                    <h5 class="card-title">Bottlenecks Analysis</h5>
+                    <p class="text-muted">Top waiting reasons affecting flow efficiency</p>
+                    
+                    <div v-for="(bottleneck, index) in selectedTeam.bottlenecks" :key="index" class="mb-3">
+                      <div class="d-flex justify-content-between">
+                        <span>{{ bottleneck.reason }}</span>
+                        <span>{{ bottleneck.hours }}h ({{ bottleneck.percentage }}%)</span>
+                      </div>
+                      <div class="progress progress-thin mt-1">
+                        <div 
+                          class="progress-bar" 
+                          :class="bottleneckClass(index)"
+                          :style="`width: ${bottleneck.percentage}%`"
+                        ></div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="card">
+                  <div class="card-body">
+                    <h5 class="card-title">Recommendations</h5>
+                    <div class="alert alert-info">
+                      <i class="fas fa-lightbulb me-2"></i>
+                      Based on current metrics, here are some recommendations to improve flow efficiency:
+                    </div>
+                    <ul class="list-group">
+                      <li v-for="(rec, index) in selectedTeam.recommendations" :key="index" class="list-group-item">
+                        <i class="fas fa-check-circle text-success me-2"></i>
+                        {{ rec }}
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Tasks Tab -->
+              <div v-else-if="currentTab === 'tasks' && selectedTeam">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                  <h3>{{ selectedTeam.name }} Tasks</h3>
+                  <button class="btn btn-primary" @click="showAddTaskModal = true">
+                    <i class="fas fa-plus me-1"></i> Add Task
+                  </button>
+                </div>
+                
+                <div class="row mb-4">
+                  <div class="col-md-3">
+                    <div class="card text-center py-3">
+                      <h5>Total</h5>
+                      <div class="display-6">{{ selectedTeam.tasks.length }}</div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card text-center py-3">
+                      <h5>Active</h5>
+                      <div class="display-6">
+                        {{ selectedTeam.tasks.filter(t => t.status === 'active').length }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card text-center py-3">
+                      <h5>Waiting</h5>
+                      <div class="display-6">
+                        {{ selectedTeam.tasks.filter(t => t.status === 'waiting').length }}
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-3">
+                    <div class="card text-center py-3">
+                      <h5>Completed</h5>
+                      <div class="display-6">
+                        {{ selectedTeam.tasks.filter(t => t.status === 'completed').length }}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="card">
+                  <div class="card-body">
+                    <div class="d-flex justify-content-between mb-3">
+                      <div class="input-group" style="max-width: 300px;">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" placeholder="Search tasks..." v-model="taskSearch">
+                      </div>
+                      <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" id="filterDropdown" data-bs-toggle="dropdown">
+                          <i class="fas fa-filter me-1"></i> Filter
+                        </button>
+                        <ul class="dropdown-menu" aria-labelledby="filterDropdown">
+                          <li><a class="dropdown-item" href="#" @click.prevent="taskFilter = 'all'">All</a></li>
+                          <li><a class="dropdown-item" href="#" @click.prevent="taskFilter = 'active'">Active</a></li>
+                          <li><a class="dropdown-item" href="#" @click.prevent="taskFilter = 'waiting'">Waiting</a></li>
+                          <li><a class="dropdown-item" href="#" @click.prevent="taskFilter = 'completed'">Completed</a></li>
+                        </ul>
+                      </div>
+                    </div>
+                    
+                    <div class="table-responsive">
+                      <table class="table">
+                        <thead>
+                          <tr>
+                            <th>ID</th>
+                            <th>Task Name</th>
+                            <th>Status</th>
+                            <th>Start Date</th>
+                            <th>Value-Adding</th>
+                            <th>Waiting</th>
+                            <th>Efficiency</th>
+                            <th>Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="task in filteredTasks" :key="task.id">
+                            <td>{{ task.id }}</td>
+                            <td>{{ task.name }}</td>
+                            <td>
+                              <span 
+                                class="badge"
+                                :class="getStatusBadgeClass(task.status)"
+                              >
+                                {{ task.status }}
+                              </span>
+                            </td>
+                            <td>{{ task.startDate }}</td>
+                            <td>{{ task.valueAddingTime }}h</td>
+                            <td>{{ task.waitingTime }}h</td>
+                            <td>
+                              <span :class="getEfficiencyClass(task.efficiency)">
+                                {{ task.efficiency }}%
+                              </span>
+                            </td>
+                            <td>
+                              <button class="btn btn-sm btn-outline-primary me-1" @click="editTask(task)">
+                                <i class="fas fa-edit"></i>
+                              </button>
+                              <button class="btn btn-sm btn-outline-danger" @click="deleteTask(task)">
+                                <i class="fas fa-trash"></i>
+                              </button>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                    
+                    <div v-if="filteredTasks.length === 0" class="text-center py-4 text-muted">
+                      <i class="fas fa-tasks fa-2x mb-3"></i>
+                      <p>No tasks found matching your criteria</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- History Tab -->
+              <div v-else-if="currentTab === 'history' && selectedTeam">
+                <h3 class="mb-4">{{ selectedTeam.name }} Historical Data</h3>
+                
+                <div class="row mb-4">
+                  <div class="col-md-12">
+                    <div class="card">
+                      <div class="card-body">
+                        <h5 class="card-title">Flow Efficiency Trend</h5>
+                        <div class="d-flex justify-content-end mb-3">
+                          <div class="btn-group">
+                            <button 
+                              class="btn btn-sm" 
+                              :class="historyPeriod === '30d' ? 'btn-primary' : 'btn-outline-primary'"
+                              @click="historyPeriod = '30d'"
+                            >
+                              30 Days
+                            </button>
+                            <button 
+                              class="btn btn-sm" 
+                              :class="historyPeriod === '90d' ? 'btn-primary' : 'btn-outline-primary'"
+                              @click="historyPeriod = '90d'"
+                            >
+                              90 Days
+                            </button>
+                            <button 
+                              class="btn btn-sm" 
+                              :class="historyPeriod === '1y' ? 'btn-primary' : 'btn-outline-primary'"
+                              @click="historyPeriod = '1y'"
+                            >
+                              1 Year
+                            </button>
+                          </div>
+                        </div>
+                        <div style="height: 350px; max-height: 350px;">
+                          <canvas id="historicalChart" ref="historicalChart"></canvas>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div class="row">
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-body">
+                        <h5 class="card-title">Monthly Averages</h5>
+                        <table class="table">
+                          <thead>
+                            <tr>
+                              <th>Month</th>
+                              <th>Flow Efficiency</th>
+                              <th>Tasks Completed</th>
+                              <th>Trend</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr v-for="(month, index) in selectedTeam.monthlyData" :key="index">
+                              <td>{{ month.month }}</td>
+                              <td :class="getEfficiencyClass(month.efficiency)">{{ month.efficiency }}%</td>
+                              <td>{{ month.tasksCompleted }}</td>
+                              <td>
+                                <i 
+                                  :class="month.trend > 0 ? 'fas fa-arrow-up text-success' : 'fas fa-arrow-down text-danger'"
+                                  v-if="month.trend !== 0"
+                                ></i>
+                                <i class="fas fa-minus text-muted" v-else></i>
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="col-md-6">
+                    <div class="card">
+                      <div class="card-body">
+                        <h5 class="card-title">Key Milestones</h5>
+                        <ul class="list-group">
+                          <li v-for="(milestone, index) in selectedTeam.milestones" :key="index" class="list-group-item">
+                            <div class="d-flex justify-content-between align-items-center">
+                              <div>
+                                <div class="fw-bold">{{ milestone.title }}</div>
+                                <div class="small text-muted">{{ milestone.date }}</div>
+                              </div>
+                              <span 
+                                class="badge rounded-pill"
+                                :class="milestone.impact > 0 ? 'bg-success' : 'bg-danger'"
+                              >
+                                {{ milestone.impact > 0 ? '+' : '' }}{{ milestone.impact }}%
+                              </span>
+                            </div>
+                          </li>
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Compare Tab -->
+              <div v-else-if="currentTab === 'compare'">
+                <h3 class="mb-4">Team Comparison</h3>
+                
+                <div class="card mb-4">
+                  <div class="card-body">
+                    <div class="row mb-3">
+                      <div class="col-md-5">
+                        <label class="form-label">Team 1</label>
+                        <select class="form-select" v-model="compareTeam1">
+                          <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
+                        </select>
+                      </div>
+                      <div class="col-md-5">
+                        <label class="form-label">Team 2</label>
+                        <select class="form-select" v-model="compareTeam2">
+                          <option v-for="team in teams" :key="team.id" :value="team.id">{{ team.name }}</option>
+                        </select>
+                      </div>
+                      <div class="col-md-2 d-flex align-items-end">
+                        <button class="btn btn-primary w-100" @click="compareTeams">Compare</button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div v-if="showComparison" class="row">
+                  <div class="col-md-12">
+                    <div class="card mb-4">
+                      <div class="card-body">
+                        <h5 class="card-title">Flow Efficiency Comparison</h5>
+                        <div class="comparison-graph-container">
+                          <div style="height: 300px; max-height: 300px;">
+                            <canvas id="comparisonChart" ref="comparisonChart"></canvas>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="col-md-12">
+                    <div class="card">
+                      <div class="card-body">
+                        <h5 class="card-title">Detailed Comparison</h5>
+                        <div class="table-responsive">
+                          <table class="table">
+                            <thead>
+                              <tr>
+                                <th>Metric</th>
+                                <th>{{ getTeamById(compareTeam1).name }}</th>
+                                <th>{{ getTeamById(compareTeam2).name }}</th>
+                                <th>Difference</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              <tr>
+                                <td>Flow Efficiency</td>
+                                <td>{{ getTeamById(compareTeam1).flowEfficiency }}%</td>
+                                <td>{{ getTeamById(compareTeam2).flowEfficiency }}%</td>
+                                <td :class="comparisonDiff('flowEfficiency') > 0 ? 'text-success' : 'text-danger'">
+                                  {{ comparisonDiff('flowEfficiency') > 0 ? '+' : '' }}{{ comparisonDiff('flowEfficiency') }}%
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>Value-Adding Time</td>
+                                <td>{{ getTeamById(compareTeam1).valueAddingTime }}h</td>
+                                <td>{{ getTeamById(compareTeam2).valueAddingTime }}h</td>
+                                <td :class="comparisonDiff('valueAddingTime') > 0 ? 'text-success' : 'text-danger'">
+                                  {{ comparisonDiff('valueAddingTime') > 0 ? '+' : '' }}{{ comparisonDiff('valueAddingTime') }}h
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>Waiting Time</td>
+                                <td>{{ getTeamById(compareTeam1).waitingTime }}h</td>
+                                <td>{{ getTeamById(compareTeam2).waitingTime }}h</td>
+                                <td :class="comparisonDiff('waitingTime') < 0 ? 'text-success' : 'text-danger'">
+                                  {{ comparisonDiff('waitingTime') > 0 ? '+' : '' }}{{ comparisonDiff('waitingTime') }}h
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>Team Size</td>
+                                <td>{{ getTeamById(compareTeam1).members }}</td>
+                                <td>{{ getTeamById(compareTeam2).members }}</td>
+                                <td>
+                                  {{ comparisonDiff('members') > 0 ? '+' : '' }}{{ comparisonDiff('members') }}
+                                </td>
+                              </tr>
+                              <tr>
+                                <td>Completed Tasks</td>
+                                <td>{{ getTeamById(compareTeam1).completedTasks }}</td>
+                                <td>{{ getTeamById(compareTeam2).completedTasks }}</td>
+                                <td>
+                                  {{ comparisonDiff('completedTasks') > 0 ? '+' : '' }}{{ comparisonDiff('completedTasks') }}
+                                </td>
+                              </tr>
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- No team selected case -->
+              <div v-else-if="!selectedTeam" class="text-center py-5">
+                <i class="fas fa-users fa-3x mb-3 text-muted"></i>
+                <h4>Select a team to view details</h4>
+                <p class="text-muted">Choose a team from the list on the left to view its flow efficiency metrics.</p>
+                <button class="btn btn-primary mt-3" @click="showAddTeamModal = true">
+                  <i class="fas fa-plus me-1"></i> Add New Team
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Add Team Modal -->
+    <div class="modal fade" id="addTeamModal" tabindex="-1" aria-hidden="true" ref="addTeamModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Add New Team</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="addTeam">
+              <div class="mb-3">
+                <label for="teamName" class="form-label">Team Name</label>
+                <input type="text" class="form-control" id="teamName" v-model="newTeam.name" required>
+              </div>
+              <div class="mb-3">
+                <label for="department" class="form-label">Department</label>
+                <input type="text" class="form-control" id="department" v-model="newTeam.department">
+              </div>
+              <div class="mb-3">
+                <label for="members" class="form-label">Number of Members</label>
+                <input type="number" class="form-control" id="members" v-model="newTeam.members" min="1" required>
+              </div>
+              <div class="mb-3">
+                <label for="teamLead" class="form-label">Team Lead</label>
+                <input type="text" class="form-control" id="teamLead" v-model="newTeam.lead">
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">Add Team</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Add Task Modal -->
+    <div class="modal fade" id="addTaskModal" tabindex="-1" aria-hidden="true" ref="addTaskModal">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">{{ editingTask ? 'Edit Task' : 'Add New Task' }}</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+            <form @submit.prevent="saveTask">
+              <div class="mb-3">
+                <label for="taskName" class="form-label">Task Name</label>
+                <input type="text" class="form-control" id="taskName" v-model="newTask.name" required>
+              </div>
+              <div class="mb-3">
+                <label for="taskStatus" class="form-label">Status</label>
+                <select class="form-select" id="taskStatus" v-model="newTask.status">
+                  <option value="active">Active</option>
+                  <option value="waiting">Waiting</option>
+                  <option value="completed">Completed</option>
+                </select>
+              </div>
+              <div class="mb-3">
+                <label for="startDate" class="form-label">Start Date</label>
+                <input type="date" class="form-control" id="startDate" v-model="newTask.startDate">
+              </div>
+              <div class="mb-3">
+                <label for="valueAddingTime" class="form-label">Value-Adding Time (hours)</label>
+                <input type="number" class="form-control" id="valueAddingTime" v-model="newTask.valueAddingTime" min="0" step="0.1">
+              </div>
+              <div class="mb-3">
+                <label for="waitingTime" class="form-label">Waiting Time (hours)</label>
+                <input type="number" class="form-control" id="waitingTime" v-model="newTask.waitingTime" min="0" step="0.1">
+              </div>
+              <div class="mb-3">
+                <label class="form-label">Current Efficiency</label>
+                <div class="input-group">
+                  <input type="text" class="form-control" :value="calculateEfficiency() + '%'" disabled>
+                  <span class="input-group-text" :class="getEfficiencyClass(calculateEfficiency())">
+                    <i class="fas fa-chart-line"></i>
+                  </span>
+                </div>
+              </div>
+              <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="submit" class="btn btn-primary">{{ editingTask ? 'Update Task' : 'Add Task' }}</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript Dependencies -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.prod.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+  
+  <!-- Application Logic -->
+  <script>
+    const { createApp, ref, computed, onMounted, watch } = Vue;
+    
+    const app = createApp({
+      setup() {
+        // State variables
+        const realtimeUpdates = ref(true);
+        const teams = ref([]);
+        const selectedTeam = ref(null);
+        const teamSearch = ref('');
+        const currentTab = ref('overview');
+        const showAddTeamModal = ref(false);
+        const showAddTaskModal = ref(false);
+        const addTeamModal = ref(null);
+        const addTaskModal = ref(null);
+        const newTeam = ref({
+          name: '',
+          department: '',
+          members: 0,
+          lead: ''
+        });
+        const newTask = ref({
+          name: '',
+          status: 'active',
+          startDate: '',
+          valueAddingTime: 0,
+          waitingTime: 0
+        });
+        const editingTask = ref(false);
+        const editingTaskId = ref(null);
+        const taskSearch = ref('');
+        const taskFilter = ref('all');
+        const historyPeriod = ref('30d');
+        const compareTeam1 = ref('');
+        const compareTeam2 = ref('');
+        const showComparison = ref(false);
+        
+        // Chart references
+        const timeDistributionChart = ref(null);
+        const efficiencyTrendChart = ref(null);
+        const historicalChart = ref(null);
+        const comparisonChart = ref(null);
+        
+        let timeDistributionChartInstance = null;
+        let efficiencyTrendChartInstance = null;
+        let historicalChartInstance = null;
+        let comparisonChartInstance = null;
+        
+        // Computed properties
+        const filteredTeams = computed(() => {
+          if (!teamSearch.value) return teams.value;
+          const search = teamSearch.value.toLowerCase();
+          return teams.value.filter(team => 
+            team.name.toLowerCase().includes(search) || 
+            team.department?.toLowerCase().includes(search)
+          );
+        });
+        
+        const filteredTasks = computed(() => {
+          if (!selectedTeam.value) return [];
+          
+          let filtered = selectedTeam.value.tasks;
+          
+          // Apply search filter
+          if (taskSearch.value) {
+            const search = taskSearch.value.toLowerCase();
+            filtered = filtered.filter(task => 
+              task.name.toLowerCase().includes(search) || 
+              task.id.toString().includes(search)
+            );
+          }
+          
+          // Apply status filter
+          if (taskFilter.value !== 'all') {
+            filtered = filtered.filter(task => task.status === taskFilter.value);
+          }
+          
+          return filtered;
+        });
+        
+        const overallFlowEfficiency = computed(() => {
+          if (teams.value.length === 0) return 0;
+          const sum = teams.value.reduce((acc, team) => acc + team.flowEfficiency, 0);
+          return Math.round(sum / teams.value.length);
+        });
+        
+        const highestEfficiency = computed(() => {
+          if (teams.value.length === 0) return { team: 'None', value: 0 };
+          const sorted = [...teams.value].sort((a, b) => b.flowEfficiency - a.flowEfficiency);
+          return { team: sorted[0].name, value: sorted[0].flowEfficiency };
+        });
+        
+        const mostImproved = computed(() => {
+          if (teams.value.length === 0) return { team: 'None', value: 0 };
+          const sorted = [...teams.value].sort((a, b) => b.efficiencyChange - a.efficiencyChange);
+          return { team: sorted[0].name, value: sorted[0].efficiencyChange };
+        });
+        
+        // Methods
+        const loadDemoData = () => {
+          // Sample data for demonstration
+          teams.value = [
+            {
+              id: 1,
+              name: 'Frontend Team',
+              department: 'Engineering',
+              members: 8,
+              lead: 'John Davis',
+              createdDate: '2023-01-15',
+              flowEfficiency: 45,
+              previousEfficiency: 38,
+              efficiencyChange: 7,
+              valueAddingTime: 160,
+              waitingTime: 195,
+              totalLeadTime: 355,
+              completedTasks: 24,
+              avgTaskLeadTime: 14.8,
+              bottlenecks: [
+                { reason: 'Waiting for Code Review', hours: 62, percentage: 32 },
+                { reason: 'Dependency on Backend', hours: 47, percentage: 24 },
+                { reason: 'QA Testing Queue', hours: 38, percentage: 19 },
+                { reason: 'Client Feedback', hours: 28, percentage: 14 },
+                { reason: 'Other', hours: 20, percentage: 11 }
+              ],
+              recommendations: [
+                'Implement pair programming to reduce code review waiting time',
+                'Schedule daily cross-team sync meetings with Backend team',
+                'Consider adding automated testing to reduce QA bottlenecks'
+              ],
+              tasks: [
+                {
+                  id: 101,
+                  name: 'Implement User Dashboard',
+                  status: 'completed',
+                  startDate: '2023-03-10',
+                  valueAddingTime: 16,
+                  waitingTime: 18,
+                  efficiency: 47
+                },
+                {
+                  id: 102,
+                  name: 'Redesign Login Page',
+                  status: 'active',
+                  startDate: '2023-03-15',
+                  valueAddingTime: 12,
+                  waitingTime: 8,
+                  efficiency: 60
+                },
+                {
+                  id: 103,
+                  name: 'Fix Responsive Layout Issues',
+                  status: 'waiting',
+                  startDate: '2023-03-18',
+                  valueAddingTime: 6,
+                  waitingTime: 12,
+                  efficiency: 33
+                },
+                {
+                  id: 104,
+                  name: 'Implement Dark Mode',
+                  status: 'active',
+                  startDate: '2023-03-20',
+                  valueAddingTime: 8,
+                  waitingTime: 4,
+                  efficiency: 67
+                }
+              ],
+              monthlyData: [
+                { month: 'January', efficiency: 38, tasksCompleted: 18, trend: 0 },
+                { month: 'February', efficiency: 40, tasksCompleted: 21, trend: 2 },
+                { month: 'March', efficiency: 45, tasksCompleted: 24, trend: 5 }
+              ],
+              milestones: [
+                { title: 'Adopted Code Review Process', date: '2023-01-20', impact: 5 },
+                { title: 'Implemented CI/CD Pipeline', date: '2023-02-15', impact: 7 },
+                { title: 'Team Restructuring', date: '2023-03-01', impact: -2 }
+              ]
+            },
+            {
+              id: 2,
+              name: 'Backend Team',
+              department: 'Engineering',
+              members: 6,
+              lead: 'Maria Wong',
+              createdDate: '2023-01-15',
+              flowEfficiency: 52,
+              previousEfficiency: 48,
+              efficiencyChange: 4,
+              valueAddingTime: 188,
+              waitingTime: 174,
+              totalLeadTime: 362,
+              completedTasks: 18,
+              avgTaskLeadTime: 20.1,
+              bottlenecks: [
+                { reason: 'Waiting for Requirements', hours: 58, percentage: 33 },
+                { reason: 'API Integration Testing', hours: 42, percentage: 24 },
+                { reason: 'Deployment Queue', hours: 36, percentage: 21 },
+                { reason: 'Database Schema Reviews', hours: 26, percentage: 15 },
+                { reason: 'Other', hours: 12, percentage: 7 }
+              ],
+              recommendations: [
+                'Implement requirements refinement workshops before sprint planning',
+                'Improve automation for integration testing',
+                'Dedicate a DevOps role for deployment management'
+              ],
+              tasks: [
+                {
+                  id: 201,
+                  name: 'API Authentication Endpoints',
+                  status: 'completed',
+                  startDate: '2023-03-05',
+                  valueAddingTime: 24,
+                  waitingTime: 16,
+                  efficiency: 60
+                },
+                {
+                  id: 202,
+                  name: 'Database Schema Optimization',
+                  status: 'completed',
+                  startDate: '2023-03-12',
+                  valueAddingTime: 18,
+                  waitingTime: 14,
+                  efficiency: 56
+                },
+                {
+                  id: 203,
+                  name: 'Payment Processing Integration',
+                  status: 'active',
+                  startDate: '2023-03-18',
+                  valueAddingTime: 15,
+                  waitingTime: 10,
+                  efficiency: 60
+                },
+                {
+                  id: 204,
+                  name: 'User Permissions System',
+                  status: 'waiting',
+                  startDate: '2023-03-22',
+                  valueAddingTime: 8,
+                  waitingTime: 12,
+                  efficiency: 40
+                }
+              ],
+              monthlyData: [
+                { month: 'January', efficiency: 40, tasksCompleted: 14, trend: 0 },
+                { month: 'February', efficiency: 48, tasksCompleted: 16, trend: 8 },
+                { month: 'March', efficiency: 52, tasksCompleted: 18, trend: 4 }
+              ],
+              milestones: [
+                { title: 'Microservice Architecture Adoption', date: '2023-01-25', impact: 8 },
+                { title: 'Database Performance Tuning', date: '2023-02-20', impact: 6 },
+                { title: 'API Gateway Implementation', date: '2023-03-10', impact: 4 }
+              ]
+            },
+            {
+              id: 3,
+              name: 'QA Team',
+              department: 'Engineering',
+              members: 4,
+              lead: 'Alex Johnson',
+              createdDate: '2023-01-20',
+              flowEfficiency: 38,
+              previousEfficiency: 32,
+              efficiencyChange: 6,
+              valueAddingTime: 128,
+              waitingTime: 209,
+              totalLeadTime: 337,
+              completedTasks: 32,
+              avgTaskLeadTime: 10.5,
+              bottlenecks: [
+                { reason: 'Waiting for Builds', hours: 68, percentage: 33 },
+                { reason: 'Environment Setup', hours: 56, percentage: 27 },
+                { reason: 'Bug Verification', hours: 44, percentage: 21 },
+                { reason: 'Test Data Preparation', hours: 28, percentage: 13 },
+                { reason: 'Other', hours: 13, percentage: 6 }
+              ],
+              recommendations: [
+                'Implement continuous testing throughout the development cycle',
+                'Automate test environment setup and data generation',
+                'Integrate developers in the testing process for faster bug fixes'
+              ],
+              tasks: [
+                {
+                  id: 301,
+                  name: 'User Dashboard Testing',
+                  status: 'completed',
+                  startDate: '2023-03-12',
+                  valueAddingTime: 10,
+                  waitingTime: 14,
+                  efficiency: 42
+                },
+                {
+                  id: 302,
+                  name: 'API Security Testing',
+                  status: 'completed',
+                  startDate: '2023-03-15',
+                  valueAddingTime: 12,
+                  waitingTime: 18,
+                  efficiency: 40
+                },
+                {
+                  id: 303,
+                  name: 'Performance Testing',
+                  status: 'active',
+                  startDate: '2023-03-20',
+                  valueAddingTime: 8,
+                  waitingTime: 10,
+                  efficiency: 44
+                },
+                {
+                  id: 304,
+                  name: 'Mobile Compatibility Testing',
+                  status: 'waiting',
+                  startDate: '2023-03-22',
+                  valueAddingTime: 4,
+                  waitingTime: 8,
+                  efficiency: 33
+                }
+              ],
+              monthlyData: [
+                { month: 'January', efficiency: 32, tasksCompleted: 28, trend: 0 },
+                { month: 'February', efficiency: 34, tasksCompleted: 30, trend: 2 },
+                { month: 'March', efficiency: 38, tasksCompleted: 32, trend: 4 }
+              ],
+              milestones: [
+                { title: 'Automated Testing Framework', date: '2023-01-30', impact: 4 },
+                { title: 'Test Data Generator', date: '2023-02-25', impact: 5 },
+                { title: 'Cross-browser Testing Setup', date: '2023-03-15', impact: 3 }
+              ]
+            },
+            {
+              id: 4,
+              name: 'DevOps Team',
+              department: 'Operations',
+              members: 3,
+              lead: 'Sarah Chen',
+              createdDate: '2023-01-25',
+              flowEfficiency: 58,
+              previousEfficiency: 50,
+              efficiencyChange: 8,
+              valueAddingTime: 140,
+              waitingTime: 101,
+              totalLeadTime: 241,
+              completedTasks: 15,
+              avgTaskLeadTime: 16.1,
+              bottlenecks: [
+                { reason: 'Security Reviews', hours: 32, percentage: 32 },
+                { reason: 'Third-party Integrations', hours: 28, percentage: 28 },
+                { reason: 'Infrastructure Provisioning', hours: 22, percentage: 22 },
+                { reason: 'Release Scheduling', hours: 12, percentage: 12 },
+                { reason: 'Other', hours: 7, percentage: 6 }
+              ],
+              recommendations: [
+                'Implement security as code practices to reduce review time',
+                'Create standardized deployment pipelines for all environments',
+                'Establish self-service platforms for development teams'
+              ],
+              tasks: [
+                {
+                  id: 401,
+                  name: 'CI/CD Pipeline Setup',
+                  status: 'completed',
+                  startDate: '2023-03-05',
+                  valueAddingTime: 20,
+                  waitingTime: 10,
+                  efficiency: 67
+                },
+                {
+                  id: 402,
+                  name: 'Kubernetes Cluster Optimization',
+                  status: 'completed',
+                  startDate: '2023-03-12',
+                  valueAddingTime: 16,
+                  waitingTime: 8,
+                  efficiency: 67
+                },
+                {
+                  id: 403,
+                  name: 'Log Aggregation System',
+                  status: 'active',
+                  startDate: '2023-03-18',
+                  valueAddingTime: 12,
+                  waitingTime: 6,
+                  efficiency: 67
+                },
+                {
+                  id: 404,
+                  name: 'Disaster Recovery Planning',
+                  status: 'waiting',
+                  startDate: '2023-03-22',
+                  valueAddingTime: 8,
+                  waitingTime: 8,
+                  efficiency: 50
+                }
+              ],
+              monthlyData: [
+                { month: 'January', efficiency: 50, tasksCompleted: 12, trend: 0 },
+                { month: 'February', efficiency: 54, tasksCompleted: 14, trend: 4 },
+                { month: 'March', efficiency: 58, tasksCompleted: 15, trend: 4 }
+              ],
+              milestones: [
+                { title: 'Cloud Migration Complete', date: '2023-01-28', impact: 6 },
+                { title: 'Containerization Strategy', date: '2023-02-18', impact: 8 },
+                { title: 'Monitoring System Overhaul', date: '2023-03-10', impact: 4 }
+              ]
+            }
+          ];
+        };
+        
+        const refreshData = () => {
+          // In a real app, this would fetch updated data from the backend
+          if (realtimeUpdates.value) {
+            // Simulate real-time updates with small random changes
+            teams.value = teams.value.map(team => {
+              const randomChange = Math.floor(Math.random() * 5) - 2; // -2 to +2
+              const newEfficiency = Math.min(Math.max(team.flowEfficiency + randomChange, 0), 100);
+              const efficiencyChange = newEfficiency - team.previousEfficiency;
+              
+              return {
+                ...team,
+                previousEfficiency: team.flowEfficiency,
+                flowEfficiency: newEfficiency,
+                efficiencyChange: efficiencyChange
+              };
+            });
+            
+            // Update charts if needed
+            if (selectedTeam.value) {
+              updateCharts();
+            }
+          }
+        };
+        
+        const selectTeam = (team) => {
+          selectedTeam.value = team;
+          setTimeout(() => {
+            initCharts();
+          }, 100);
+        };
+        
+        const getEfficiencyClass = (efficiency) => {
+          if (efficiency >= 60) return 'efficiency-high';
+          if (efficiency >= 40) return 'efficiency-medium';
+          return 'efficiency-low';
+        };
+        
+        const getEfficiencyBadgeClass = (efficiency) => {
+          if (efficiency >= 60) return 'bg-success';
+          if (efficiency >= 40) return 'bg-warning';
+          return 'bg-danger';
+        };
+        
+        const getStatusBadgeClass = (status) => {
+          if (status === 'completed') return 'bg-success';
+          if (status === 'active') return 'bg-primary';
+          if (status === 'waiting') return 'bg-warning';
+          return 'bg-secondary';
+        };
+        
+        const bottleneckClass = (index) => {
+          const classes = ['bg-danger', 'bg-warning', 'bg-info', 'bg-primary', 'bg-secondary'];
+          return classes[index % classes.length];
+        };
+        
+        const addTeam = () => {
+          const id = teams.value.length > 0 ? Math.max(...teams.value.map(t => t.id)) + 1 : 1;
+          
+          const team = {
+            id,
+            name: newTeam.value.name,
+            department: newTeam.value.department,
+            members: parseInt(newTeam.value.members),
+            lead: newTeam.value.lead,
+            createdDate: new Date().toISOString().split('T')[0],
+            flowEfficiency: Math.floor(Math.random() * 30) + 30, // Random value between 30-60%
+            previousEfficiency: Math.floor(Math.random() * 30) + 25, // Random value between 25-55%
+            valueAddingTime: 0,
+            waitingTime: 0,
+            totalLeadTime: 0,
+            completedTasks: 0,
+            tasks: [],
+            bottlenecks: [
+              { reason: 'Waiting for Data', hours: 0, percentage: 0 },
+              { reason: 'Team Coordination', hours: 0, percentage: 0 },
+              { reason: 'External Dependencies', hours: 0, percentage: 0 }
+            ],
+            recommendations: [
+              'Start tracking task cycle times consistently',
+              'Identify and document common bottlenecks',
+              'Establish team-specific flow metrics'
+            ],
+            monthlyData: [
+              { month: 'January', efficiency: 0, tasksCompleted: 0, trend: 0 },
+              { month: 'February', efficiency: 0, tasksCompleted: 0, trend: 0 },
+              { month: 'March', efficiency: 0, tasksCompleted: 0, trend: 0 }
+            ],
+            milestones: []
+          };
+          
+          team.efficiencyChange = team.flowEfficiency - team.previousEfficiency;
+          teams.value.push(team);
+          
+          // Reset form
+          newTeam.value = {
+            name: '',
+            department: '',
+            members: 0,
+            lead: ''
+          };
+          
+          // Close modal
+          const modal = new bootstrap.Modal(addTeamModal.value);
+          modal.hide();
+        };
+        
+        const calculateEfficiency = () => {
+          const valueAdding = parseFloat(newTask.value.valueAddingTime) || 0;
+          const waiting = parseFloat(newTask.value.waitingTime) || 0;
+          const total = valueAdding + waiting;
+          
+          if (total === 0) return 0;
+          return Math.round((valueAdding / total) * 100);
+        };
+        
+        const editTask = (task) => {
+          editingTask.value = true;
+          editingTaskId.value = task.id;
+          newTask.value = { ...task };
+          showAddTaskModal.value = true;
+        };
+        
+        const deleteTask = (task) => {
+          if (confirm('Are you sure you want to delete this task?')) {
+            selectedTeam.value.tasks = selectedTeam.value.tasks.filter(t => t.id !== task.id);
+          }
+        };
+        
+        const saveTask = () => {
+          const efficiency = calculateEfficiency();
+          
+          if (editingTask.value && selectedTeam.value) {
+            // Update existing task
+            const taskIndex = selectedTeam.value.tasks.findIndex(t => t.id === editingTaskId.value);
+            if (taskIndex !== -1) {
+              selectedTeam.value.tasks[taskIndex] = {
+                ...newTask.value,
+                efficiency
+              };
+            }
+          } else if (selectedTeam.value) {
+            // Add new task
+            const id = selectedTeam.value.tasks.length > 0 
+              ? Math.max(...selectedTeam.value.tasks.map(t => t.id)) + 1 
+              : (selectedTeam.value.id * 100) + 1;
+            
+            selectedTeam.value.tasks.push({
+              id,
+              name: newTask.value.name,
+              status: newTask.value.status,
+              startDate: newTask.value.startDate || new Date().toISOString().split('T')[0],
+              valueAddingTime: parseFloat(newTask.value.valueAddingTime),
+              waitingTime: parseFloat(newTask.value.waitingTime),
+              efficiency
+            });
+          }
+          
+          // Update team metrics
+          updateTeamMetrics();
+          
+          // Reset form
+          newTask.value = {
+            name: '',
+            status: 'active',
+            startDate: new Date().toISOString().split('T')[0],
+            valueAddingTime: 0,
+            waitingTime: 0
+          };
+          editingTask.value = false;
+          editingTaskId.value = null;
+          
+          // Close modal
+          const modal = new bootstrap.Modal(addTaskModal.value);
+          modal.hide();
+          
+          // Update charts
+          setTimeout(() => {
+            updateCharts();
+          }, 100);
+        };
+        
+        const updateTeamMetrics = () => {
+          if (!selectedTeam.value) return;
+          
+          const totalValueAddingTime = selectedTeam.value.tasks.reduce(
+            (sum, task) => sum + parseFloat(task.valueAddingTime || 0), 0
+          );
+          
+          const totalWaitingTime = selectedTeam.value.tasks.reduce(
+            (sum, task) => sum + parseFloat(task.waitingTime || 0), 0
+          );
+          
+          const totalLeadTime = totalValueAddingTime + totalWaitingTime;
+          const completedTasks = selectedTeam.value.tasks.filter(t => t.status === 'completed').length;
+          
+          selectedTeam.value.valueAddingTime = Math.round(totalValueAddingTime);
+          selectedTeam.value.waitingTime = Math.round(totalWaitingTime);
+          selectedTeam.value.totalLeadTime = Math.round(totalLeadTime);
+          selectedTeam.value.completedTasks = completedTasks;
+          
+          // Calculate flow efficiency
+          if (totalLeadTime > 0) {
+            selectedTeam.value.flowEfficiency = Math.round((totalValueAddingTime / totalLeadTime) * 100);
+          }
+          
+          // Calculate average task lead time
+          if (completedTasks > 0) {
+            const completedTasksData = selectedTeam.value.tasks.filter(t => t.status === 'completed');
+            const totalTaskLeadTime = completedTasksData.reduce(
+              (sum, task) => sum + parseFloat(task.valueAddingTime || 0) + parseFloat(task.waitingTime || 0), 
+              0
+            );
+            selectedTeam.value.avgTaskLeadTime = (totalTaskLeadTime / completedTasks).toFixed(1);
+          } else {
+            selectedTeam.value.avgTaskLeadTime = 0;
+          }
+          
+          // Update efficiency change
+          selectedTeam.value.efficiencyChange = selectedTeam.value.flowEfficiency - selectedTeam.value.previousEfficiency;
+        };
+        
+        const initCharts = () => {
+          if (!selectedTeam.value) return;
+          
+          // Destroy existing charts if they exist
+          if (timeDistributionChartInstance) timeDistributionChartInstance.destroy();
+          if (efficiencyTrendChartInstance) efficiencyTrendChartInstance.destroy();
+          
+          // Make sure chart elements exist before trying to initialize
+          if (!timeDistributionChart.value || !efficiencyTrendChart.value) {
+            // Wait for next tick when DOM should be updated
+            setTimeout(initCharts, 100);
+            return;
+          }
+          
+          // Time Distribution Chart (Doughnut)
+          const timeDistributionCtx = timeDistributionChart.value.getContext('2d');
+          timeDistributionChartInstance = new Chart(timeDistributionCtx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Value-Adding Time', 'Waiting Time'],
+              datasets: [{
+                data: [selectedTeam.value.valueAddingTime, selectedTeam.value.waitingTime],
+                backgroundColor: ['#4caf50', '#ff9800'],
+                borderWidth: 1
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              responsive: true,
+              plugins: {
+                legend: {
+                  position: 'bottom'
+                },
+                tooltip: {
+                  callbacks: {
+                    label: function(context) {
+                      const label = context.label || '';
+                      const value = context.raw || 0;
+                      const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                      const percentage = Math.round((value / total) * 100);
+                      return `${label}: ${value}h (${percentage}%)`;
+                    }
+                  }
+                }
+              }
+            }
+          });
+          
+          // Efficiency Trend Chart (Line)
+          const mockDates = [];
+          const mockEfficiencies = [];
+          
+          // Generate the last 30 days of data
+          const today = new Date();
+          for (let i = 29; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(today.getDate() - i);
+            mockDates.push(date.toISOString().split('T')[0]);
+            
+            // Generate a somewhat random but trending efficiency value
+            const base = selectedTeam.value.previousEfficiency;
+            const trend = (selectedTeam.value.flowEfficiency - selectedTeam.value.previousEfficiency) / 30;
+            const randomFactor = Math.random() * 10 - 5; // -5 to +5
+            const efficiency = Math.min(Math.max(base + (trend * (30 - i)) + randomFactor, 0), 100);
+            mockEfficiencies.push(Math.round(efficiency));
+          }
+          
+          const efficiencyTrendCtx = efficiencyTrendChart.value.getContext('2d');
+          efficiencyTrendChartInstance = new Chart(efficiencyTrendCtx, {
+            type: 'line',
+            data: {
+              labels: mockDates,
+              datasets: [{
+                label: 'Flow Efficiency %',
+                data: mockEfficiencies,
+                borderColor: '#3f51b5',
+                backgroundColor: 'rgba(63, 81, 181, 0.1)',
+                borderWidth: 2,
+                fill: true,
+                tension: 0.3
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              plugins: {
+                legend: {
+                  display: false
+                },
+                tooltip: {
+                  mode: 'index',
+                  intersect: false
+                }
+              },
+              scales: {
+                x: {
+                  grid: {
+                    display: false
+                  },
+                  ticks: {
+                    maxTicksLimit: 8
+                  }
+                },
+                y: {
+                  min: 0,
+                  max: 100,
+                  ticks: {
+                    stepSize: 20
+                  }
+                }
+              }
+            }
+          });
+        };
+        
+        const updateCharts = () => {
+          // Update existing charts based on current data
+          if (timeDistributionChartInstance && selectedTeam.value) {
+            timeDistributionChartInstance.data.datasets[0].data = [
+              selectedTeam.value.valueAddingTime, 
+              selectedTeam.value.waitingTime
+            ];
+            timeDistributionChartInstance.update();
+          }
+          
+          // Other chart updates as needed
+        };
+        
+        const getTeamById = (teamId) => {
+          return teams.value.find(team => team.id === parseInt(teamId)) || { 
+            name: 'Unknown',
+            flowEfficiency: 0,
+            valueAddingTime: 0,
+            waitingTime: 0,
+            members: 0,
+            completedTasks: 0
+          };
+        };
+        
+        const compareTeams = () => {
+          if (compareTeam1.value && compareTeam2.value && compareTeam1.value !== compareTeam2.value) {
+            showComparison.value = true;
+            
+            // Initialize comparison chart
+            setTimeout(() => {
+              if (comparisonChartInstance) comparisonChartInstance.destroy();
+              
+              const team1 = getTeamById(parseInt(compareTeam1.value));
+              const team2 = getTeamById(parseInt(compareTeam2.value));
+              
+              const comparisonCtx = comparisonChart.value.getContext('2d');
+              comparisonChartInstance = new Chart(comparisonCtx, {
+                type: 'bar',
+                data: {
+                  labels: ['Flow Efficiency', 'Value-Adding Time', 'Waiting Time', 'Tasks Completed'],
+                  datasets: [
+                    {
+                      label: team1.name,
+                      data: [
+                        team1.flowEfficiency,
+                        team1.valueAddingTime,
+                        team1.waitingTime,
+                        team1.completedTasks
+                      ],
+                      backgroundColor: 'rgba(63, 81, 181, 0.7)'
+                    },
+                    {
+                      label: team2.name,
+                      data: [
+                        team2.flowEfficiency,
+                        team2.valueAddingTime,
+                        team2.waitingTime,
+                        team2.completedTasks
+                      ],
+                      backgroundColor: 'rgba(245, 0, 87, 0.7)'
+                    }
+                  ]
+                },
+                options: {
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'top'
+                    },
+                    tooltip: {
+                      callbacks: {
+                        label: function(context) {
+                          const label = context.dataset.label || '';
+                          const value = context.raw || 0;
+                          const dataIndex = context.dataIndex;
+                          
+                          if (dataIndex === 0) {
+                            return `${label}: ${value}%`;
+                          } else if (dataIndex === 1 || dataIndex === 2) {
+                            return `${label}: ${value}h`;
+                          } else {
+                            return `${label}: ${value}`;
+                          }
+                        }
+                      }
+                    }
+                  },
+                  scales: {
+                    x: {
+                      grid: {
+                        display: false
+                      }
+                    },
+                    y: {
+                      beginAtZero: true
+                    }
+                  }
+                }
+              });
+            }, 100);
+          }
+        };
+        
+        const comparisonDiff = (property) => {
+          if (!compareTeam1.value || !compareTeam2.value) return 0;
+          
+          const team1 = getTeamById(parseInt(compareTeam1.value));
+          const team2 = getTeamById(parseInt(compareTeam2.value));
+          
+          return team1[property] - team2[property];
+        };
+        
+        onMounted(() => {
+          // Load initial data
+          loadDemoData();
+          
+          // Initialize modals
+          if (typeof bootstrap !== 'undefined') {
+            const addTeamModalElement = new bootstrap.Modal(addTeamModal.value);
+            const addTaskModalElement = new bootstrap.Modal(addTaskModal.value);
+            
+            // Watch for modal visibility changes
+            watch(showAddTeamModal, (newVal) => {
+              if (newVal) {
+                addTeamModalElement.show();
+              } else {
+                addTeamModalElement.hide();
+              }
+            });
+            
+            watch(showAddTaskModal, (newVal) => {
+              if (newVal) {
+                addTaskModalElement.show();
+              } else {
+                addTaskModalElement.hide();
+              }
+            });
+            
+            // Set up event listeners for modals
+            addTeamModal.value.addEventListener('hidden.bs.modal', () => {
+              showAddTeamModal.value = false;
+            });
+            
+            addTaskModal.value.addEventListener('hidden.bs.modal', () => {
+              showAddTaskModal.value = false;
+              editingTask.value = false;
+              newTask.value = {
+                name: '',
+                status: 'active',
+                startDate: new Date().toISOString().split('T')[0],
+                valueAddingTime: 0,
+                waitingTime: 0
+              };
+            });
+          }
+          
+          // Set up real-time updates
+          if (realtimeUpdates.value) {
+            setInterval(() => {
+              refreshData();
+            }, 10000); // Update every 10 seconds
+          }
+        });
+        
+        // Watch for changes that should trigger chart updates
+        watch([() => selectedTeam.value, historyPeriod, currentTab], () => {
+          if (currentTab.value === 'overview' || currentTab.value === 'history') {
+            // Use a slightly longer timeout to ensure DOM is updated
+            setTimeout(() => {
+              initCharts();
+            }, 200);
+          }
+        });
+        
+        return {
+          // State
+          realtimeUpdates,
+          teams,
+          selectedTeam,
+          teamSearch,
+          currentTab,
+          showAddTeamModal,
+          showAddTaskModal,
+          addTeamModal,
+          addTaskModal,
+          newTeam,
+          newTask,
+          editingTask,
+          taskSearch,
+          taskFilter,
+          historyPeriod,
+          compareTeam1,
+          compareTeam2,
+          showComparison,
+          timeDistributionChart,
+          efficiencyTrendChart,
+          historicalChart,
+          comparisonChart,
+          
+          // Computed
+          filteredTeams,
+          filteredTasks,
+          overallFlowEfficiency,
+          highestEfficiency,
+          mostImproved,
+          
+          // Methods
+          refreshData,
+          selectTeam,
+          getEfficiencyClass,
+          getEfficiencyBadgeClass,
+          getStatusBadgeClass,
+          bottleneckClass,
+          addTeam,
+          calculateEfficiency,
+          editTask,
+          deleteTask,
+          saveTask,
+          getTeamById,
+          compareTeams,
+          comparisonDiff
+        };
+      }
+    });
+    
+    app.mount('#app');
+  </script>
+</body>
+</html>

@@ -3,143 +3,172 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AGI Transformation</title>
+  <title>Project Explorer</title>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
-  <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-    
-    body {
-      font-family: 'Inter', sans-serif;
-      background-color: #f8fafc;
-    }
-    
-    .folder-card {
-      transition: transform 0.3s ease, box-shadow 0.3s ease;
-    }
-    
-    .folder-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
-    }
-    
-    .file-item {
-      transition: background-color 0.2s ease;
-    }
-    
-    .file-item:hover {
-      background-color: #f1f5f9;
-    }
-  </style>
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+  <link href="style.css" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.47/vue.global.min.js"></script>
 </head>
 <body>
-  <div class="min-h-screen pb-12">
-    <!-- Header -->
-    <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
-      <div class="container mx-auto py-6 px-4">
-        <h1 class="text-3xl font-bold text-center">Project Explorer</h1>
-        <p class="text-center mt-2 text-blue-100">Browse your web projects</p>
-      </div>
-    </header>
-    
-    <!-- Content -->
-    <div class="container mx-auto px-4 mt-8">
-      <!-- Folders Grid -->
-      <div id="folders-container">
-        <h2 class="text-2xl font-bold text-gray-800 mb-6">Projects</h2>
-        <div id="folders-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+  <div id="app">
+    <div class="min-h-screen pb-12 bg-gray-50">
+      <!-- Header -->
+      <header class="bg-gradient-to-r from-blue-600 to-indigo-700 text-white shadow-lg">
+        <div class="container mx-auto py-6 px-4">
+          <h1 class="text-3xl font-bold text-center">Projects Explorer</h1>
+          <p class="text-center mt-2 text-blue-100">Browse my AI-powered web projects</p>
+        </div>
+      </header>
+      
+      <!-- Content -->
+      <div class="container mx-auto px-4 mt-8">
+        <!-- Main grid -->
+        <div class="flex flex-col lg:flex-row gap-8">
+          <!-- Filters panel -->
+          <div class="lg:w-1/4 bg-white p-6 rounded-lg shadow-md h-fit sticky top-4">
+            <h2 class="text-xl font-bold text-gray-800 mb-4">Filters</h2>
+            
+            <!-- Search filter -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Search</label>
+              <div class="relative">
+                <input 
+                  type="text" 
+                  v-model="filters.search" 
+                  placeholder="Search projects..." 
+                  class="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500 pl-10"
+                >
+                <div class="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                  <i class="fas fa-search text-gray-400"></i>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Models filter -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Models</label>
+              <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                <div v-for="model in availableModels" :key="model" class="flex items-center">
+                  <input 
+                    type="checkbox" 
+                    :id="model" 
+                    :value="model" 
+                    v-model="filters.selectedModels"
+                    class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded"
+                  >
+                  <label :for="model" class="ml-2 block text-sm text-gray-700">{{ model }}</label>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Date range filter -->
+            <div class="mb-6">
+              <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>
+              <div class="grid grid-cols-2 gap-2">
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">From</label>
+                  <input 
+                    type="date" 
+                    v-model="filters.dateRange.from" 
+                    class="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                </div>
+                <div>
+                  <label class="block text-xs text-gray-500 mb-1">To</label>
+                  <input 
+                    type="date" 
+                    v-model="filters.dateRange.to" 
+                    class="w-full px-2 py-1.5 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                </div>
+              </div>
+            </div>
+            
+            <!-- Reset button -->
+            <button 
+              @click="resetFilters" 
+              class="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded-md transition-all duration-200 flex items-center justify-center"
+            >
+              <i class="fas fa-undo mr-2"></i> Reset Filters
+            </button>
+            
+            <!-- Stats -->
+            <div class="mt-6 pt-6 border-t border-gray-200">
+              <p class="text-sm text-gray-600">Showing {{ filteredProjects.length }} of {{ projects.length }} projects</p>
+            </div>
+          </div>
+          
+          <!-- Projects grid -->
+          <div class="lg:w-3/4">
+            <div v-if="filteredProjects.length === 0" class="bg-white rounded-lg shadow-md p-8 text-center">
+              <div class="text-gray-500 mb-4">
+                <i class="fas fa-search text-5xl mb-4"></i>
+                <h3 class="text-xl font-medium">No projects found</h3>
+                <p class="mt-2">Try adjusting your filters to see more results.</p>
+              </div>
+              <button @click="resetFilters" class="text-indigo-600 hover:text-indigo-800 font-medium">
+                Clear all filters
+              </button>
+            </div>
+            
+            <div v-else class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+              <div 
+                v-for="project in filteredProjects" 
+                :key="project.name"
+                class="bg-white rounded-lg shadow-md overflow-hidden project-card transition-all duration-300"
+                @click="navigateToProject(project.path)"
+              >
+                <div class="relative h-48 overflow-hidden">
+                  <img 
+                    :src="project.path + '/image.png'" 
+                    :alt="project.name" 
+                    class="w-full h-full object-cover transition-transform duration-500 hover:scale-110"
+                    @error="handleImageError"
+                  >
+                  <div class="absolute top-0 right-0 m-2">
+                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                      {{ formatDate(project.date) }}
+                    </span>
+                  </div>
+                </div>
+                
+                <div class="p-4">
+                  <h3 class="text-lg font-semibold text-gray-800 mb-2">{{ project.name }}</h3>
+                  
+                  <div class="flex flex-wrap gap-1 mb-3">
+                    <span 
+                      v-for="model in project.models" 
+                      :key="model"
+                      class="px-2 py-1 text-xs font-medium rounded-full bg-indigo-100 text-indigo-800"
+                    >
+                      {{ model }}
+                    </span>
+                    <span 
+                      v-if="!project.models || project.models.length === 0"
+                      class="px-2 py-1 text-xs font-medium rounded-full bg-gray-100 text-gray-600"
+                    >
+                      No model info
+                    </span>
+                  </div>
+                  
+                  <div class="flex justify-between items-center mt-2">
+                    <span class="text-sm text-gray-500">
+                      <i class="fas fa-folder mr-1"></i> {{ project.path.split('/').pop() }}
+                    </span>
+                    <div class="text-indigo-600 hover:text-indigo-800">
+                      <i class="fas fa-arrow-right"></i>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
   
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const foldersGrid = document.getElementById('folders-grid');
-      
-      // UPDATE THIS ARRAY MANUALLY WITH YOUR FOLDER STRUCTURE
-      // Format: 
-      // { 
-      //   name: "folder-name", 
-      //   files: [
-      //     { name: "file-name.html", path: "./path/to/file.html" }
-      //   ]
-      // }
-      const folderStructure = [
-        {
-          name: "AI Experiments",
-          files: [
-            { name: "Github Resume Maker", path: "./ai-experiments/github-profile" },
-            { name: "Interactive Periodic Table", path: "./ai-experiments/periodic-table-claude-3.7" },
-            { name: "Time Tracker Pro", path: "./ai-experiments/time-tracker-pro" },
-            { name: "Book Nook", path: "./ai-experiments/book-nook" },
-            { name: "AI Models Browser", path: "./ai-experiments/ai-models" },
-            { name: "LLMs, An Interactive Guide", path: "./ai-experiments/llms-interactive-guide"},
-            { name: "TV Satellite Trakcer", path: "./ai-experiments/satellite-tracker"},
-            { name: "AI Integration Profit Loss Calculator", path: "./ai-experiments/ai-integration-profit-loss-calculator"},
-            { name: "Iran Railway History", path: "./ai-experiments/iran-railway-history"},
-            { name: "Interactive World Map", path: "./ai-experiments/world-map" },
-            { name: 'Visual Story Barnaby', path: './ai-experiments/visual-story-barnaby', models: ['Gemini 2.0', 'Claude 3.7'], date: '2025-03-25' },
-            { name: 'Top 100 Scientists', path: './ai-experiments/top-100-scientists', models: ['Claude 3.7'], date: '2025-03-25'},
-            { name: 'Plan Designer Pro', path: './ai-experiments/plan-designer-pro', models: ['Claude 3.7'], date: '2025-03-26'},
-          ]
-        }
-      ];
-      
-      // Function to render folders and their files
-      function renderFolders(folders) {
-        foldersGrid.innerHTML = '';
-        
-        folders.forEach(folder => {
-          const folderCard = document.createElement('div');
-          folderCard.className = 'bg-white rounded-lg shadow-md overflow-hidden folder-card';
-          
-          const folderHeader = document.createElement('div');
-          folderHeader.className = 'bg-indigo-600 p-4';
-          folderHeader.innerHTML = `
-            <div class="flex items-center">
-              <svg class="w-6 h-6 text-white mr-2" fill="currentColor" viewBox="0 0 20 20">
-                <path fill-rule="evenodd" d="M2 6a2 2 0 012-2h4l2 2h4a2 2 0 012 2v1H8a3 3 0 00-3 3v1.5a1.5 1.5 0 01-3 0V6z" clip-rule="evenodd" />
-                <path d="M6 12a2 2 0 012-2h8a2 2 0 012 2v2a2 2 0 01-2 2H2h2a2 2 0 002-2v-2z" />
-              </svg>
-              <h3 class="text-lg font-semibold text-white capitalize">${folder.name.replace(/-/g, ' ')}</h3>
-            </div>
-            <div class="text-blue-100 text-sm mt-1">
-              ${folder.files.length} HTML ${folder.files.length === 1 ? 'file' : 'files'}
-            </div>
-          `;
-          
-          const filesList = document.createElement('div');
-          filesList.className = 'divide-y';
-          
-          if (folder.files && folder.files.length > 0) {
-            folder.files.forEach(file => {
-              const fileItem = document.createElement('div');
-              fileItem.className = 'p-4 file-item';
-              fileItem.innerHTML = `
-                <a href="${file.path}" target="_blank" class="flex items-center text-indigo-600 hover:text-indigo-800">
-                  <svg class="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4zm2 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" />
-                  </svg>
-                  ${file.name}
-                </a>
-              `;
-              filesList.appendChild(fileItem);
-            });
-          } else {
-            const emptyMessage = document.createElement('div');
-            emptyMessage.className = 'p-4 text-gray-500 text-center';
-            emptyMessage.textContent = 'No HTML files found';
-            filesList.appendChild(emptyMessage);
-          }
-          
-          folderCard.appendChild(folderHeader);
-          folderCard.appendChild(filesList);
-          foldersGrid.appendChild(folderCard);
-        });
-      }
-      
-      // Render the folder structure
-      renderFolders(folderStructure);
-    });
-  </script>
+  <script src="data.js"></script>
+  <script src="script.js"></script>
 </body>
 </html>
