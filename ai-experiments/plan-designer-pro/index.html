@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Plan Designer Pro</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.2.39/vue.global.prod.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.4.120/pdf.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/interact.js/1.10.11/interact.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/svg.js/3.1.2/svg.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <div class="logo">
+                <i class="fas fa-drafting-compass"></i>
+                <h1>Plan Designer Pro</h1>
+            </div>
+            <div class="actions">
+                <button @click="newProject" class="btn btn-secondary">
+                    <i class="fas fa-file"></i> New
+                </button>
+                <button @click="saveProject" class="btn btn-secondary">
+                    <i class="fas fa-save"></i> Save
+                </button>
+                <button @click="showExportModal = true" class="btn btn-primary">
+                    <i class="fas fa-file-export"></i> Export
+                </button>
+            </div>
+        </header>
+
+        <main>
+            <!-- Left panel: Toolbox -->
+            <aside class="toolbox">
+                <div class="search-box">
+                    <input type="text" v-model="searchTerm" placeholder="Search tools...">
+                    <i class="fas fa-search"></i>
+                </div>
+
+                <div class="tool-categories">
+                    <div v-for="(category, index) in filteredCategories" :key="index" class="category">
+                        <div class="category-header" @click="toggleCategory(category.name)">
+                            <i :class="category.icon"></i>
+                            <h3>{{ category.name }}</h3>
+                            <i :class="['fas', expandedCategories.includes(category.name) ? 'fa-chevron-down' : 'fa-chevron-right']"></i>
+                        </div>
+                        <div class="category-items" v-if="expandedCategories.includes(category.name)">
+                            <div v-for="(item, itemIndex) in category.items" :key="itemIndex" 
+                                 class="tool-item" 
+                                 @click="selectTool(item)"
+                                 :class="{ active: selectedTool === item }">
+                                <i :class="item.icon"></i>
+                                <span>{{ item.name }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </aside>
+
+            <!-- Main workspace -->
+            <section class="workspace">
+                <div class="workspace-controls">
+                    <div class="zoom-controls">
+                        <button @click="zoomOut" class="btn btn-icon">
+                            <i class="fas fa-search-minus"></i>
+                        </button>
+                        <span>{{ Math.round(zoomLevel * 100) }}%</span>
+                        <button @click="zoomIn" class="btn btn-icon">
+                            <i class="fas fa-search-plus"></i>
+                        </button>
+                    </div>
+                    <div class="view-controls">
+                        <button @click="toggleGrid" class="btn btn-icon" :class="{ active: showGrid }">
+                            <i class="fas fa-border-all"></i>
+                        </button>
+                        <button @click="toggleSnap" class="btn btn-icon" :class="{ active: snapToGrid }">
+                            <i class="fas fa-magnet"></i>
+                        </button>
+                        <button @click="toggleRuler" class="btn btn-icon" :class="{ active: showRuler }">
+                            <i class="fas fa-ruler-combined"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="canvas-container" ref="canvasContainer">
+                    <div class="ruler horizontal" v-if="showRuler"></div>
+                    <div class="ruler vertical" v-if="showRuler"></div>
+                    <div class="canvas" 
+                         ref="canvas"
+                         :style="{ transform: `scale(${zoomLevel})` }"
+                         @mousedown="startDrawing"
+                         @mousemove="drawing"
+                         @mouseup="stopDrawing"
+                         @mouseleave="stopDrawing">
+                        <div class="grid" v-if="showGrid"></div>
+                        <div class="elements-container">
+                            <!-- Elements will be rendered here dynamically -->
+                        </div>
+                        <div class="measurements-container">
+                            <!-- Measurements will be rendered here -->
+                        </div>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Right panel: Properties -->
+            <aside class="properties-sidebar" v-if="selectedElement">
+                <div class="properties-panel">
+                    <h3>Properties</h3>
+                    <div class="property">
+                        <label>Width (cm)</label>
+                        <input type="number" v-model="selectedElement.width" @change="updateElement">
+                    </div>
+                    <div class="property">
+                        <label>Height (cm)</label>
+                        <input type="number" v-model="selectedElement.height" @change="updateElement">
+                    </div>
+                    <div class="property">
+                        <label>Rotation (°)</label>
+                        <input type="number" v-model="selectedElement.rotation" @change="updateElement">
+                    </div>
+                    <div class="property" v-if="selectedElement.type === 'text'">
+                        <label>Text</label>
+                        <input type="text" v-model="selectedElement.text" @change="updateElement">
+                    </div>
+                    <div class="property">
+                        <label>Layer</label>
+                        <select v-model="selectedElement.layer" @change="updateElement">
+                            <option value="background">Background</option>
+                            <option value="walls">Walls</option>
+                            <option value="furniture">Furniture</option>
+                            <option value="annotations">Annotations</option>
+                        </select>
+                    </div>
+                    <button @click="deleteElement" class="btn btn-danger">
+                        <i class="fas fa-trash"></i> Delete
+                    </button>
+                </div>
+            </aside>
+        </main>
+
+        <!-- Export Modal -->
+        <div class="modal" v-if="showExportModal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Export Floor Plan</h2>
+                    <button @click="showExportModal = false" class="btn-close">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Format</label>
+                        <select v-model="exportFormat">
+                            <option value="pdf">PDF</option>
+                            <option value="svg">SVG</option>
+                            <option value="png">PNG</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Paper Size</label>
+                        <select v-model="exportPaperSize">
+                            <option value="a4">A4</option>
+                            <option value="a3">A3</option>
+                            <option value="letter">Letter</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Scale</label>
+                        <select v-model="exportScale">
+                            <option value="1:50">1:50</option>
+                            <option value="1:100">1:100</option>
+                            <option value="1:200">1:200</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Watermark Text</label>
+                        <input type="text" v-model="watermarkText" placeholder="Optional watermark text">
+                    </div>
+                    <div class="form-group">
+                        <label>Include Measurements</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" v-model="includeMeasurements" id="measurements-toggle">
+                            <label for="measurements-toggle"></label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Include Grid</label>
+                        <div class="toggle-switch">
+                            <input type="checkbox" v-model="includeGrid" id="grid-toggle">
+                            <label for="grid-toggle"></label>
+                        </div>
+                    </div>
+                    <div class="preview-container">
+                        <h3>Preview</h3>
+                        <div class="export-preview">
+                            <!-- Preview will be generated here -->
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button @click="showExportModal = false" class="btn btn-secondary">Cancel</button>
+                    <button @click="exportFloorPlan" class="btn btn-primary">Export</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
