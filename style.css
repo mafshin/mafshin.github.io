@@ -98,6 +98,14 @@ input:focus, select:focus, button:focus {
   pointer-events: none;
 }
 
+span.single-line {
+  white-space: nowrap !important;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block; /* or inline-block */
+  max-width: 200px; /* adjust as needed */
+}
+
 /* Mobile optimization */
 @media (max-width: 640px) {
   .container {

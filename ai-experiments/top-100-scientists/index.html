@@ -587,6 +587,35 @@
     import scientists from './data.js';
     const { createApp, ref, computed, onMounted } = Vue;
 
+    console.log('[Fetch Image 404 Logger] Setting up fetch interceptor...');
+
+const originalFetch = window.fetch; // Store original fetch
+
+window.fetch = function() {
+    const args = arguments;
+    const url = args[0] instanceof Request ? args[0].url : args[0];
+
+    // Define common image file extensions
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.svg', '.bmp', '.ico', '.avif'];
+    const lowerCaseUrl = url.toLowerCase();
+    const isImage = imageExtensions.some(ext => lowerCaseUrl.endsWith(ext) || lowerCaseUrl.includes(ext + '?'));
+
+    // Call the original fetch and handle the promise
+    return originalFetch.apply(this, args).then(response => {
+        // Check if it's an image URL and the response status is 404
+        if (isImage && response.status === 404) {
+            console.error(`[Fetch Image 404] ${response.status} - Failed to fetch image: ${response.url}`);
+        }
+        return response; // Pass the original response along
+    }).catch(error => {
+        // Log network errors too, if desired (though not specifically 404)
+        // console.error(`[Fetch Network Error] for ${url}:`, error);
+        throw error; // Re-throw the error so the original code handles it
+    });
+};
+
+console.log('[Fetch Image 404 Logger] Interceptor active for requests made using fetch().');
+
     createApp({
       setup() {
         // State

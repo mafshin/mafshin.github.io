@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استخراج اطلاعات کشورها</title>
+  <!-- Include the translations file -->
+  <script src="country-translations.js"></script>
+  <!-- Include the flags data file -->
+  <script src="country-flags.js"></script>
+  <style>
+    body {
+      font-family: 'Tahoma', 'Arial', sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f5f5f5;
+    }
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background-color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      text-align: center;
+    }
+    button {
+      background-color: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    textarea {
+      width: 100%;
+      height: 500px;
+      padding: 10px;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-family: monospace;
+      direction: ltr;
+    }
+    .status {
+      margin: 10px 0;
+      padding: 10px;
+      border-radius: 4px;
+    }
+    .success {
+      background-color: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background-color: #f8d7da;
+      color: #721c24;
+    }
+    .loader {
+      border: 5px solid #f3f3f3;
+      border-radius: 50%;
+      border-top: 5px solid #3498db;
+      width: 25px;
+      height: 25px;
+      -webkit-animation: spin 2s linear infinite;
+      animation: spin 2s linear infinite;
+      display: inline-block;
+      margin-right: 10px;
+      vertical-align: middle;
+    }
+    @-webkit-keyframes spin {
+      0% { -webkit-transform: rotate(0deg); }
+      100% { -webkit-transform: rotate(360deg); }
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    /* Tabs styling */
+    .tabs {
+      display: flex;
+      margin-top: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    .tab-btn {
+      background-color: #f1f1f1;
+      color: #333;
+      border: 1px solid #ddd;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      margin-right: 5px;
+      cursor: pointer;
+    }
+    .tab-btn:hover {
+      background-color: #ddd;
+    }
+    .tab-btn.active {
+      background-color: #4CAF50;
+      color: white;
+    }
+    .tab-content {
+      display: none;
+      padding: 10px 0;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    
+    /* Country preview styling */
+    #country-preview {
+      margin-top: 20px;
+    }
+    .country-card {
+      background-color: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      padding: 15px;
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+    }
+    .country-flag {
+      width: 100px;
+      height: 60px;
+      margin-left: 15px;
+      object-fit: contain;
+      border: 1px solid #ddd;
+    }
+    .flag-svg {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    .flag-svg svg {
+      max-width: 100%;
+      max-height: 100%;
+    }
+    .country-info {
+      flex: 1;
+    }
+    .country-name {
+      font-size: 18px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    .country-detail {
+      margin-bottom: 3px;
+      font-size: 14px;
+    }
+    .country-fact {
+      margin-top: 10px;
+      font-style: italic;
+      color: #666;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>استخراج اطلاعات کشورها</h1>
+    <p>این برنامه اطلاعات کشورها را از API استخراج کرده و به فرمت مورد نظر تبدیل می‌کند.</p>
+    
+    <button id="extractBtn">استخراج اطلاعات</button>
+    <div id="status" class="status"></div>
+    
+    <div class="tabs">
+      <button class="tab-btn active" data-tab="json">نتیجه JSON</button>
+      <button class="tab-btn" data-tab="preview">پیش‌نمایش</button>
+    </div>
+    
+    <div id="json-tab" class="tab-content active">
+      <textarea id="result" readonly placeholder="نتیجه استخراج اینجا نمایش داده می‌شود..."></textarea>
+    </div>
+    
+    <div id="preview-tab" class="tab-content">
+      <div id="country-preview"></div>
+    </div>
+  </div>
+
+  <script>
+    // Country Data Extraction Application
+    // This application extracts country information from REST Countries API and formats it in Persian
+
+// Persian translations for country names
+const persianCountryNames = {
+  "Afghanistan": "افغانستان",
+  "Albania": "آلبانی",
+  "Algeria": "الجزایر",
+  "Andorra": "آندورا",
+  "Angola": "آنگولا",
+  "Antigua and Barbuda": "آنتیگوا و باربودا",
+  "Argentina": "آرژانتین",
+  "Armenia": "ارمنستان",
+  "Australia": "استرالیا",
+  "Austria": "اتریش",
+  "Azerbaijan": "آذربایجان",
+  "Bahamas": "باهاما",
+  "Bahrain": "بحرین",
+  "Bangladesh": "بنگلادش",
+  "Barbados": "باربادوس",
+  "Belarus": "بلاروس",
+  "Belgium": "بلژیک",
+  "Belize": "بلیز",
+  "Benin": "بنین",
+  "Bhutan": "بوتان",
+  "Bolivia": "بولیوی",
+  "Bosnia and Herzegovina": "بوسنی و هرزگوین",
+  "Botswana": "بوتسوانا",
+  "Brazil": "برزیل",
+  "Brunei": "برونئی",
+  "Bulgaria": "بلغارستان",
+  "Burkina Faso": "بورکینافاسو",
+  "Burundi": "بوروندی",
+  "Cabo Verde": "کیپ ورد",
+  "Cambodia": "کامبوج",
+  "Cameroon": "کامرون",
+  "Canada": "کانادا",
+  "Central African Republic": "جمهوری آفریقای مرکزی",
+  "Chad": "چاد",
+  "Chile": "شیلی",
+  "China": "چین",
+  "Colombia": "کلمبیا",
+  "Comoros": "کومور",
+  "Congo": "کنگو",
+  "Costa Rica": "کاستاریکا",
+  "Croatia": "کرواسی",
+  "Cuba": "کوبا",
+  "Cyprus": "قبرس",
+  "Czech Republic": "جمهوری چک",
+  "Czechia": "چک",
+  "Denmark": "دانمارک",
+  "Djibouti": "جیبوتی",
+  "Dominica": "دومینیکا",
+  "Dominican Republic": "جمهوری دومینیکن",
+  "Ecuador": "اکوادور",
+  "Egypt": "مصر",
+  "El Salvador": "السالوادور",
+  "Equatorial Guinea": "گینه استوایی",
+  "Eritrea": "اریتره",
+  "Estonia": "استونی",
+  "Eswatini": "اسواتینی",
+  "Ethiopia": "اتیوپی",
+  "Fiji": "فیجی",
+  "Finland": "فنلاند",
+  "France": "فرانسه",
+  "Gabon": "گابن",
+  "Gambia": "گامبیا",
+  "Georgia": "گرجستان",
+  "Germany": "آلمان",
+  "Ghana": "غنا",
+  "Greece": "یونان",
+  "Grenada": "گرنادا",
+  "Guatemala": "گواتمالا",
+  "Guinea": "گینه",
+  "Guinea-Bissau": "گینه بیسائو",
+  "Guyana": "گویان",
+  "Haiti": "هائیتی",
+  "Holy See": "واتیکان",
+  "Honduras": "هندوراس",
+  "Hungary": "مجارستان",
+  "Iceland": "ایسلند",
+  "India": "هند",
+  "Indonesia": "اندونزی",
+  "Iran": "ایران",
+  "Iraq": "عراق",
+  "Ireland": "ایرلند",
+  "Israel": "اسرائیل",
+  "Italy": "ایتالیا",
+  "Jamaica": "جامائیکا",
+  "Japan": "ژاپن",
+  "Jordan": "اردن",
+  "Kazakhstan": "قزاقستان",
+  "Kenya": "کنیا",
+  "Kiribati": "کیریباتی",
+  "Korea, North": "کره شمالی",
+  "Korea, South": "کره جنوبی",
+  "South Korea": "کره جنوبی",
+  "North Korea": "کره شمالی",
+  "Kuwait": "کویت",
+  "Kyrgyzstan": "قرقیزستان",
+  "Laos": "لائوس",
+  "Latvia": "لتونی",
+  "Lebanon": "لبنان",
+  "Lesotho": "لسوتو",
+  "Liberia": "لیبریا",
+  "Libya": "لیبی",
+  "Liechtenstein": "لیختن‌اشتاین",
+  "Lithuania": "لیتوانی",
+  "Luxembourg": "لوکزامبورگ",
+  "Madagascar": "ماداگاسکار",
+  "Malawi": "مالاوی",
+  "Malaysia": "مالزی",
+  "Maldives": "مالدیو",
+  "Mali": "مالی",
+  "Malta": "مالت",
+  "Marshall Islands": "جزایر مارشال",
+  "Mauritania": "موریتانی",
+  "Mauritius": "موریس",
+  "Mexico": "مکزیک",
+  "Micronesia": "میکرونزی",
+  "Moldova": "مولداوی",
+  "Monaco": "موناکو",
+  "Mongolia": "مغولستان",
+  "Montenegro": "مونته‌نگرو",
+  "Morocco": "مراکش",
+  "Mozambique": "موزامبیک",
+  "Myanmar": "میانمار",
+  "Namibia": "نامیبیا",
+  "Nauru": "نائورو",
+  "Nepal": "نپال",
+  "Netherlands": "هلند",
+  "New Zealand": "نیوزیلند",
+  "Nicaragua": "نیکاراگوئه",
+  "Niger": "نیجر",
+  "Nigeria": "نیجریه",
+  "North Macedonia": "مقدونیه شمالی",
+  "Norway": "نروژ",
+  "Oman": "عمان",
+  "Pakistan": "پاکستان",
+  "Palau": "پالائو",
+  "Palestine": "فلسطین",
+  "Panama": "پاناما",
+  "Papua New Guinea": "پاپوآ گینه نو",
+  "Paraguay": "پاراگوئه",
+  "Peru": "پرو",
+  "Philippines": "فیلیپین",
+  "Poland": "لهستان",
+  "Portugal": "پرتغال",
+  "Qatar": "قطر",
+  "Romania": "رومانی",
+  "Russia": "روسیه",
+  "Rwanda": "رواندا",
+  "Saint Kitts and Nevis": "سنت کیتس و نویس",
+  "Saint Lucia": "سنت لوسیا",
+  "Saint Vincent and the Grenadines": "سنت وینسنت و گرنادین",
+  "Samoa": "ساموآ",
+  "San Marino": "سن مارینو",
+  "Sao Tome and Principe": "سائوتومه و پرنسیپ",
+  "Saudi Arabia": "عربستان سعودی",
+  "Senegal": "سنگال",
+  "Serbia": "صربستان",
+  "Seychelles": "سیشل",
+  "Sierra Leone": "سیرالئون",
+  "Singapore": "سنگاپور",
+  "Slovakia": "اسلواکی",
+  "Slovenia": "اسلوونی",
+  "Solomon Islands": "جزایر سلیمان",
+  "Somalia": "سومالی",
+  "South Africa": "آفریقای جنوبی",
+  "South Sudan": "سودان جنوبی",
+  "Spain": "اسپانیا",
+  "Sri Lanka": "سری‌لانکا",
+  "Sudan": "سودان",
+  "Suriname": "سورینام",
+  "Sweden": "سوئد",
+  "Switzerland": "سوئیس",
+  "Syria": "سوریه",
+  "Taiwan": "تایوان",
+  "Tajikistan": "تاجیکستان",
+  "Tanzania": "تانزانیا",
+  "Thailand": "تایلند",
+  "Timor-Leste": "تیمور شرقی",
+  "Togo": "توگو",
+  "Tonga": "تونگا",
+  "Trinidad and Tobago": "ترینیداد و توباگو",
+  "Tunisia": "تونس",
+  "Turkey": "ترکیه",
+  "Turkmenistan": "ترکمنستان",
+  "Tuvalu": "تووالو",
+  "Uganda": "اوگاندا",
+  "Ukraine": "اوکراین",
+  "United Arab Emirates": "امارات متحده عربی",
+  "United Kingdom": "بریتانیا",
+  "United States": "ایالات متحده آمریکا",
+  "Uruguay": "اروگوئه",
+  "Uzbekistan": "ازبکستان",
+  "Vanuatu": "وانواتو",
+  "Venezuela": "ونزوئلا",
+  "Vietnam": "ویتنام",
+  "Yemen": "یمن",
+  "Zambia": "زامبیا",
+  "Zimbabwe": "زیمبابوه"
+};
+
+    // Main function to fetch and process country data
+    async function extractCountryData() {
+      try {
+        console.log('Starting country data extraction...');
+        
+        // Fetch data from REST Countries API (which is publicly available)
+        const response = await fetch('https://restcountries.com/v3.1/all');
+        if (!response.ok) {
+          throw new Error(`Failed to fetch data: ${response.status} ${response.statusText}`);
+        }
+        
+        const countriesData = await response.json();
+        console.log(`Fetched data for ${countriesData.length} countries`);
+        
+        // Process the data into our desired format
+        const formattedCountries = await processCountries(countriesData);
+        
+        // Display the result
+        console.log('Extraction complete!');
+        console.log(`Processed ${formattedCountries.length} countries`);
+        
+        // Output the result as JSON
+        const jsonResult = JSON.stringify(formattedCountries, null, 2);
+        document.getElementById('result').value = jsonResult;
+        
+        return formattedCountries;
+      } catch (error) {
+        console.error('Error in data extraction:', error);
+        throw error;
+      }
+    }
+
+    // Process the raw country data into our desired format
+    async function processCountries(countriesData) {
+      // Regions translation
+      const regionTranslations = {
+        'Africa': 'آفریقا',
+        'Americas': 'آمریکا',
+        'Asia': 'آسیا',
+        'Europe': 'اروپا',
+        'Oceania': 'اقیانوسیه',
+        'Antarctic': 'قطب جنوب',
+        'North America': 'آمریکای شمالی',
+        'South America': 'آمریکای جنوبی',
+        'Central America': 'آمریکای مرکزی',
+        'Caribbean': 'کارائیب'
+      };
+
+      // Translate numbers to Persian format
+      function toPersianNumber(num) {
+        // For simplicity, we'll just add Persian thousand separators
+        return new Intl.NumberFormat('fa-IR').format(num);
+      }
+
+      // Process each country
+      const formattedCountries = await Promise.all(
+        countriesData.map(async (country) => {
+          try {
+            // Get country name
+            const englishName = country.name.common;
+            
+            // Get additional fun fact for the country
+            const funFact = await getFunFact(englishName);
+            
+            // Get region
+            let region = country.region;
+            if (country.subregion && (country.subregion.includes('America') || country.subregion === 'Caribbean')) {
+              region = country.subregion;
+            }
+            
+            // Get official languages as a comma-separated string
+            const languages = country.languages 
+              ? Object.values(country.languages).join('، ')
+              : 'نامشخص';
+            
+            // Get currency
+            let currency = 'نامشخص';
+            if (country.currencies) {
+              const currencyCode = Object.keys(country.currencies)[0];
+              if (currencyCode) {
+                currency = country.currencies[currencyCode].name || currencyCode;
+              }
+            }
+            
+            // Get the two-letter country code
+            const countryCode = country.cca2 || country.alpha2Code || '';
+            
+            // Get the flag URL
+            const flagUrl = country.flags?.svg || '';
+            
+            // Get or store the flag SVG
+            if (flagUrl && countryCode && typeof window.countryFlags !== 'undefined') {
+              // Check if we already have this flag in our collection
+              if (!window.countryFlags[countryCode] && typeof window.addFlag === 'function') {
+                try {
+                  // Fetch the SVG content directly from the URL
+                  const flagResponse = await fetch(flagUrl);
+                  if (flagResponse.ok) {
+                    const flagSvg = await flagResponse.text();
+                    // Store the flag in our collection
+                    window.addFlag(countryCode, flagSvg);
+                  }
+                } catch (flagError) {
+                  console.error(`Error fetching flag for ${englishName}:`, flagError);
+                }
+              }
+            }
+            
+            // Get Persian name from our comprehensive translations
+            const persianName = translateToFarsi(englishName) || 
+              englishName;
+            
+            // Create formatted country object
+            return {
+              name: persianName,
+              englishName: englishName,
+              region: regionTranslations[region] || 'نامشخص',
+              capital: country.capital ? country.capital[0] : 'نامشخص',
+              population: toPersianNumber(country.population) + ' نفر',
+              language: languages,
+              currency: currency,
+              area: country.area ? toPersianNumber(country.area) + ' کیلومتر مربع' : 'نامشخص',
+              countryCode: countryCode
+            };
+          } catch (error) {
+            console.error(`Error processing country ${country.name?.common}:`, error);
+            return null;
+          }
+        })
+      );
+      
+      // Filter out any null values from errors
+      return formattedCountries.filter(country => country !== null);
+    }
+
+    // This function would ideally make a call to a translation API
+    // For demonstration, we'll use a small dictionary for some countries
+    function translateToFarsi(englishName) {
+      // We're now using the comprehensive persianCountryNames object from the external file
+      // This function serves as a fallback for any countries not in our main dictionary
+      const translations = {
+        "United States of America": "ایالات متحده آمریکا",
+        "England": "انگلستان",
+        "UK": "بریتانیا",
+        "Great Britain": "بریتانیا",
+        "UAE": "امارات متحده عربی",
+        "USA": "ایالات متحده آمریکا"
+      };
+      
+      return persianCountryNames[englishName] || null;
+    }
+
+    // Fetch a fun fact about the country
+    // In a real app, this would call an API or database
+    async function getFunFact(countryName) {
+      // Sample fun facts for a few countries (in Persian)
+      const funFacts = {
+        'Iran': 'ایران دارای یکی از قدیمی‌ترین تمدن‌های جهان است و پرسپولیس که در سال 518 قبل از میلاد ساخته شده، یکی از آثار باستانی مشهور آن است.',
+        'Afghanistan': 'افغانستان دارای کوه‌های هندوکش است که بخشی از رشته کوه‌های هیمالیا می‌باشد.',
+        'United States': 'ایالات متحده دارای بیش از 400 پارک ملی است که یوسمیتی و گرند کنیون از مشهورترین آنها هستند.',
+        'France': 'برج ایفل که نماد فرانسه است، در ابتدا به عنوان یک سازه موقت برای نمایشگاه جهانی 1889 ساخته شد.',
+        'Germany': 'آلمان بیش از 1500 نوع سوسیس و 1000 نوع نان تولید می‌کند.',
+        'China': 'دیوار بزرگ چین با طول بیش از 21000 کیلومتر، تنها سازه ساخت بشر است که از فضا قابل رویت است.',
+        'Japan': 'ژاپن از 6852 جزیره تشکیل شده است.',
+        'Russia': 'روسیه بزرگترین کشور جهان است و 11 منطقه زمانی مختلف را پوشش می‌دهد.',
+        'United Kingdom': 'لندن تنها شهری است که سه بار میزبان بازی‌های المپیک بوده است.',
+        'Canada': 'کانادا بیشترین میزان آب شیرین جهان را در دریاچه‌های خود دارد.',
+        'Australia': 'استرالیا تنها کشوری است که یک قاره کامل را اشغال کرده است.',
+        'Brazil': 'آمازون که بخش بزرگی از آن در برزیل قرار دارد، بزرگترین جنگل بارانی جهان است.',
+        'India': 'هند زادگاه چهار دین بزرگ جهان - هندوئیسم، بودیسم، جینیسم و سیکیسم است.'
+      };
+      
+      return funFacts[countryName] || 'اطلاعات جالب در دسترس نیست.';
+    }
+
+    // Export flags to file
+    function exportFlagsToFile() {
+      if (typeof window.countryFlags !== 'undefined') {
+        const flagsData = `// Generated country flags data
+const countryFlags = ${JSON.stringify(window.countryFlags, null, 2)};
+
+// Function to add a flag to the collection
+function addFlag(countryCode, svgData) {
+  if (countryCode && svgData) {
+    countryFlags[countryCode] = svgData;
+  }
+}
+
+// Function to get a flag from the collection
+function getFlag(countryCode) {
+  return countryFlags[countryCode] || null;
+}
+
+// Make functions and data available globally
+window.countryFlags = countryFlags;
+window.addFlag = addFlag;
+window.getFlag = getFlag;
+`;
+
+        // Create a download link for the flags file
+        const blob = new Blob([flagsData], { type: 'text/javascript' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'country-flags.js';
+        a.click();
+        URL.revokeObjectURL(url);
+      }
+    }
+    
+    // Function to render country preview
+    function renderCountryPreview(countries) {
+      const previewContainer = document.getElementById('country-preview');
+      previewContainer.innerHTML = '';
+      
+      // Take the first 10 countries for preview
+      const previewCountries = countries.slice(0, 10);
+      
+      previewCountries.forEach(country => {
+        const countryCard = document.createElement('div');
+        countryCard.className = 'country-card';
+        
+        let flagHtml = '';
+        // First try to get flag from our collection if it exists
+        if (country.countryCode && typeof window.getFlag === 'function') {
+          const flagSvg = window.getFlag(country.countryCode);
+          if (flagSvg) {
+            flagHtml = `<div class="country-flag flag-svg">${flagSvg}</div>`;
+          }
+        }
+        // Fallback to using the flag URL
+        if (!flagHtml && country.flagUrl) {
+          flagHtml = `<img src="${country.flagUrl}" alt="${country.englishName} flag" class="country-flag">`;
+        }
+        
+        countryCard.innerHTML = `
+          ${flagHtml}
+          <div class="country-info">
+            <div class="country-name">${country.name} (${country.englishName})</div>
+            <div class="country-detail"><strong>کد ایزو:</strong> ${country.iso}</div>
+            <div class="country-detail"><strong>منطقه:</strong> ${country.region}</div>
+            <div class="country-detail"><strong>پایتخت:</strong> ${country.capital}</div>
+            <div class="country-detail"><strong>جمعیت:</strong> ${country.population}</div>
+            <div class="country-detail"><strong>زبان:</strong> ${country.language}</div>
+            <div class="country-detail"><strong>ارز:</strong> ${country.currency}</div>
+            <div class="country-detail"><strong>مساحت:</strong> ${country.area}</div>
+            <div class="country-fact">${country.funFact}</div>
+          </div>
+        `;
+        
+        previewContainer.appendChild(countryCard);
+      });
+      
+      if (countries.length > 10) {
+        const moreInfo = document.createElement('div');
+        moreInfo.textContent = `و ${countries.length - 10} کشور دیگر...`;
+        moreInfo.style.textAlign = 'center';
+        moreInfo.style.margin = '20px 0';
+        previewContainer.appendChild(moreInfo);
+      }
+    }
+
+    // When the page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      const extractBtn = document.getElementById('extractBtn');
+      const statusEl = document.getElementById('status');
+      const tabBtns = document.querySelectorAll('.tab-btn');
+      const tabContents = document.querySelectorAll('.tab-content');
+      
+      // Tab functionality
+      tabBtns.forEach(btn => {
+        btn.addEventListener('click', () => {
+          // Remove active class from all buttons and contents
+          tabBtns.forEach(b => b.classList.remove('active'));
+          tabContents.forEach(c => c.classList.remove('active'));
+          
+          // Add active class to clicked button and corresponding content
+          btn.classList.add('active');
+          const tabId = btn.getAttribute('data-tab');
+          document.getElementById(`${tabId}-tab`).classList.add('active');
+        });
+      });
+      
+      // Extract functionality
+      extractBtn.addEventListener('click', function() {
+        statusEl.innerHTML = '<div class="loader"></div> در حال استخراج اطلاعات...';
+        statusEl.className = 'status';
+        extractBtn.disabled = true;
+        document.getElementById('result').value = '';
+        document.getElementById('country-preview').innerHTML = '';
+        
+        extractCountryData()
+          .then((countries) => {
+            statusEl.textContent = 'استخراج با موفقیت انجام شد!';
+            statusEl.className = 'status success';
+            
+            // Add export button for flags
+            const exportBtn = document.createElement('button');
+            exportBtn.textContent = 'ذخیره فایل پرچم‌ها';
+            exportBtn.style.backgroundColor = '#3498db';
+            exportBtn.style.marginRight = '10px';
+            exportBtn.onclick = exportFlagsToFile;
+            statusEl.appendChild(document.createElement('br'));
+            statusEl.appendChild(document.createElement('br'));
+            statusEl.appendChild(exportBtn);
+            
+            // Render the preview
+            renderCountryPreview(countries);
+          })
+          .catch(error => {
+            statusEl.textContent = 'خطا در استخراج اطلاعات: ' + error.message;
+            statusEl.className = 'status error';
+            console.error(error);
+          })
+          .finally(() => {
+            extractBtn.disabled = false;
+          });
+      });
+    });
+  </script>
+</body>
+</html>

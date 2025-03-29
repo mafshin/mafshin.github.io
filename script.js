@@ -97,7 +97,7 @@ document.addEventListener('DOMContentLoaded', () => {
       
       // Handle image loading errors
       handleImageError(event) {
-        event.target.src = 'https://via.placeholder.com/400x300?text=No+Preview';
+        event.target.src = './ai-experiments/assets/placeholder.png'; // Placeholder image
       }
     },
     mounted() {

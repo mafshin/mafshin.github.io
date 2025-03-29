@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mind Map Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div id="app" :class="{ 'dark-mode': darkMode }">
+        <header>
+            <div class="logo">
+                <i class="fas fa-brain"></i>
+                <h1>Mind Map Visualizer</h1>
+            </div>
+            <div class="header-controls">
+                <button @click="toggleTheme" class="theme-toggle" :title="darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'">
+                    <i :class="darkMode ? 'fas fa-sun' : 'fas fa-moon'"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="container">
+            <aside class="sidebar">
+                <div class="sidebar-section">
+                    <h3>Available Mind Maps</h3>
+                    <div class="mindmap-list">
+                        <div v-for="map in availableMindmaps" :key="map.id" 
+                             class="mindmap-item" 
+                             :class="{ active: currentMindmap && currentMindmap.id === map.id }"
+                             @click="loadMindmap(map)">
+                            <div class="mindmap-title">{{ map.title }}</div>
+                            <div class="mindmap-topic">{{ map.topic }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="sidebar-section">
+                    <h3>Upload Mind Map</h3>
+                    <div class="upload-section">
+                        <label for="fileUpload" class="upload-btn">
+                            <i class="fas fa-upload"></i> Choose File
+                        </label>
+                        <input type="file" id="fileUpload" @change="handleFileUpload" accept=".md" style="display: none;">
+                        <div class="file-info" v-if="uploadedFileName">{{ uploadedFileName }}</div>
+                    </div>
+                </div>
+            </aside>
+
+            <main class="content">
+                <div class="mindmap-info" v-if="currentMindmap">
+                    <h2>{{ currentMindmap.title }}</h2>
+                    <div class="mindmap-meta">
+                        <span class="topic">{{ currentMindmap.topic }}</span>
+                        <span class="description">{{ currentMindmap.description }}</span>
+                    </div>
+                </div>
+
+                <div class="mindmap-controls">
+                    <button @click="expandAll" title="Expand All"><i class="fas fa-plus-square"></i></button>
+                    <button @click="collapseAll" title="Collapse All"><i class="fas fa-minus-square"></i></button>
+                    <button @click="zoomIn" title="Zoom In"><i class="fas fa-search-plus"></i></button>
+                    <button @click="zoomOut" title="Zoom Out"><i class="fas fa-search-minus"></i></button>
+                    <button @click="resetZoom" title="Reset Zoom"><i class="fas fa-sync-alt"></i></button>
+                </div>
+
+                <div id="mindmap-container" class="mindmap-container">
+                    <div v-if="!rootNode" class="empty-state">
+                        <i class="fas fa-sitemap fa-3x"></i>
+                        <p>Select a mind map from the sidebar or upload your own</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <footer>
+            <p>Copyright: Mohsen Afshin, Think hard, make a plan and execute it.</p>
+        </footer>
+    </div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.14/dist/vue.js"></script>
+    <script src="data.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Experiments Image Viewer</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+      height: 100vh;
+      overflow: hidden;
+    }
+    .app-container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+    }
+    .sidebar {
+      width: 20%;
+      height: 100%;
+      overflow-y: auto;
+      background-color: #f5f5f5;
+      border-right: 1px solid #ddd;
+      transition: width 0.3s ease;
+      padding: 0;
+    }
+    .sidebar.collapsed {
+      width: 40px;
+    }
+    .sidebar-content {
+      padding: 15px;
+      overflow-wrap: break-word;
+      word-wrap: break-word;
+      hyphens: auto;
+    }
+    .sidebar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px;
+      background-color: #e0e0e0;
+      border-bottom: 1px solid #ccc;
+    }
+    .sidebar-title {
+      font-weight: bold;
+      margin: 0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .collapse-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 18px;
+      padding: 0;
+      color: #555;
+    }
+    .main-content {
+      flex: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background-color: #eaeaea;
+      overflow: auto;
+      padding: 20px;
+    }
+    .image-container {
+      max-width: 90%;
+      max-height: 90%;
+      border: 1px solid #ddd;
+      background-color: white;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      padding: 10px;
+    }
+    .image-display {
+      max-width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+    }
+    .step {
+      margin-bottom: 20px;
+    }
+    .step h1 {
+      font-size: 1.2rem;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 5px;
+    }
+    .error-message {
+      color: #d32f2f;
+      text-align: center;
+      padding: 20px;
+    }
+    @media (max-width: 768px) {
+      .sidebar {
+        width: 30%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="app-container">
+      <!-- Sidebar Panel -->
+      <div class="sidebar" :class="{ 'collapsed': isSidebarCollapsed }">
+        <div class="sidebar-header" v-if="!isSidebarCollapsed">
+          <h2 class="sidebar-title">{{ modelName }}</h2>
+          <button class="collapse-btn" @click="toggleSidebar">←</button>
+        </div>
+        <div class="sidebar-header" v-else>
+          <button class="collapse-btn" @click="toggleSidebar">→</button>
+        </div>
+        <div class="sidebar-content" v-if="!isSidebarCollapsed" v-html="parsedMarkdown"></div>
+      </div>
+      
+      <!-- Main Content Area -->
+      <div class="main-content">
+        <div v-if="error" class="error-message">
+          <p>{{ error }}</p>
+        </div>
+        <div v-else-if="imageUrl" class="image-container">
+          <img :src="imageUrl" alt="Viewer image" class="image-display">
+        </div>
+        <div v-else class="error-message">
+          <p>Loading image...</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Simple URL parameter extraction function
+    function getUrlParameter(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+
+    new Vue({
+      el: '#app',
+      data: {
+        imageUrl: null,
+        markdownContent: '',
+        error: null,
+        isSidebarCollapsed: false,
+        modelName: 'Image Description'
+      },
+      computed: {
+        parsedMarkdown: function() {
+          if (!this.markdownContent) return '';
+          return marked.parse(this.markdownContent);
+        }
+      },
+      methods: {
+        toggleSidebar: function() {
+          this.isSidebarCollapsed = !this.isSidebarCollapsed;
+        },
+        loadImage: function() {
+          const imgParam = getUrlParameter('img');
+          
+          if (!imgParam) {
+            this.error = 'No image specified. Use ?img=IMAGE_FILE_NAME parameter.';
+            return;
+          }
+          
+          // Set the image URL
+          this.imageUrl = `assets/${imgParam}.png`;
+          
+          // Load the corresponding markdown file (same name with .md extension)
+          const mdFileName = this.imageUrl.split('.').slice(0, -1).join('.') + '.md';
+          
+          fetch(mdFileName)
+            .then(response => {
+              if (!response.ok) {
+                throw new Error(`Failed to load markdown file: ${mdFileName}`);
+              }
+              return response.text();
+            })
+            .then(text => {
+              this.markdownContent = text;
+              
+              // Extract model name from the first line
+              const lines = text.split('\n');
+              if (lines.length > 0 && lines[0].trim()) {
+                this.modelName = lines[0].trim();
+                // Remove the first line from markdown content
+                this.markdownContent = lines.slice(1).join('\n').trim();
+              }
+            })
+            .catch(err => {
+              console.error('Error loading markdown:', err);
+              this.error = `Could not load step descriptions: ${err.message}`;
+            });
+        }
+      },
+      mounted: function() {
+        this.loadImage();
+      }
+    });
+  </script>
+</body>
+</html>
