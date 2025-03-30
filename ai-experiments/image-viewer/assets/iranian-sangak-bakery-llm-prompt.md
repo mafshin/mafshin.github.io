@@ -1,5 +1,5 @@
 ChatGPT 4o 
-(2025-03-29)
+2025-03-29
 
 # Prompt 1
 I give you a description of an image, then you tune it for an image generation prompt to be given to a model

@@ -18,6 +18,7 @@ const folderStructure = [
       { name: "Plan Designer Pro", path: "./ai-experiments/plan-designer-pro", models: ["Claude 3.7"], date: "2025-03-26" },
       { name: "Flow Efficiency Dashboard", path: "./ai-experiments/flow-efficiency-dashboard", models: ["Claude 3.7"], date: "2025-03-26" },
       { name: 'Iranian Sangak Bakery AI Art', path: "./ai-experiments/image-viewer/?img=iranian-sangak-bakery-llm-prompt", models: ["ChatGPT 4o"], date: "2025-03-29", type: "image", image_name: "iranian-sangak-bakery-llm-prompt" },
+      { name: 'Chess in 2035', path: "./ai-experiments/image-viewer/?img=chess-agi-2035", models: ["ChatGPT 4o"], date: "2025-03-30", type: "image", image_name: "chess-agi-2035" },
     ]
   }
 ];
