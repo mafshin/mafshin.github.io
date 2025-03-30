@@ -268,7 +268,7 @@
       
       <!-- Toggle Button -->
       <button class="toggle-button" :class="{ 'sidebar-open': !isSidebarCollapsed }" @click="toggleSidebar">
-        {{ isSidebarCollapsed ? '≡' : '×' }}
+        {{ isSidebarCollapsed ? 'Prompts' : '×' }}
       </button>
       
       <!-- Sidebar Panel (Overlay) -->
@@ -294,7 +294,7 @@
         imageUrl: null,
         markdownContent: '',
         error: null,
-        isSidebarCollapsed: window.innerWidth <= 768, // Default expanded on large screens, collapsed on smaller screens
+        isSidebarCollapsed: false, // Default expanded on large screens, collapsed on smaller screens
         modelName: 'Image Description',
         imageLoaded: true // Set to true by default to avoid loading state problems
       },
@@ -355,11 +355,11 @@
         },
         handleResize: function() {
           // Auto-collapse sidebar on smaller screens, expand on larger screens
-          this.isSidebarCollapsed = window.innerWidth <= 768;
+          // this.isSidebarCollapsed = window.innerWidth <= 768;
         },
         initSidebarState: function() {
           // Set initial sidebar state based on screen size
-          this.isSidebarCollapsed = window.innerWidth <= 768;
+          this.isSidebarCollapsed = true;
         }
       },
       mounted: function() {
