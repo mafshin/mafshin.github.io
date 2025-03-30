@@ -36,4 +36,4 @@ const projects = folderStructure.reduce((acc, folder) => {
     file.display_path = file.path.split('/').pop();
   }
   return file;
-});
+}).sort((a, b) => new Date(b.date) - new Date(a.date));
