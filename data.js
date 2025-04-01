@@ -20,6 +20,7 @@ const folderStructure = [
       { name: 'Iranian Sangak Bakery AI Art', path: "./ai-experiments/image-viewer/?img=iranian-sangak-bakery-llm-prompt", models: ["ChatGPT 4o"], date: "2025-03-29", type: "image", image_name: "iranian-sangak-bakery-llm-prompt" },
       { name: 'Chess in 2035', path: "./ai-experiments/image-viewer/?img=chess-agi-2035", models: ["ChatGPT 4o"], date: "2025-03-30", type: "image", image_name: "chess-agi-2035" },
       { name: 'Mohsen\'s Agent Bakery', path: "./ai-experiments/image-viewer/?img=mohsen-agent-bakery", models: ["ChatGPT 4o"], date: "2025-03-30", type: "image", image_name: "mohsen-agent-bakery" },
+      { name: 'Wooden Leg - Metal Hand', path: "./ai-experiments/image-viewer/?img=wooden-leg-metal-hand", models: ["ChatGPT 4o"], date: "2025-04-01", type: "image", image_name: "wooden-leg-metal-hand" },
     ]
   }
 ];
