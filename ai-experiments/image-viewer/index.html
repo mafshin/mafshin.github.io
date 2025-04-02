@@ -48,6 +48,7 @@
       width: 100%;
       height: 100%;
       display: flex;
+      flex-direction: column;
       justify-content: center;
       align-items: center;
       background-color: var(--background);
@@ -134,7 +135,7 @@
 
     .image-container {
       max-width: 90%;
-      max-height: 90vh;
+      max-height: 80vh;
       border-radius: 8px;
       background-color: var(--card-bg);
       box-shadow: var(--shadow);
@@ -142,11 +143,12 @@
       transition: var(--transition);
       box-sizing: border-box;
       overflow: hidden;
+      position: relative;
     }
 
     .image-display {
       max-width: 100%;
-      max-height: calc(90vh - 32px); /* Accounting for padding */
+      max-height: calc(80vh - 32px); /* Accounting for padding */
       object-fit: contain;
       border-radius: 4px;
       display: block;
@@ -183,6 +185,58 @@
     @keyframes spin {
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
+    }
+
+    /* Navigation controls for slideshow */
+    .slideshow-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 20px;
+      gap: 16px;
+    }
+
+    .slideshow-button {
+      background-color: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 4px;
+      padding: 8px 16px;
+      cursor: pointer;
+      font-weight: 500;
+      transition: var(--transition);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .slideshow-button:hover {
+      background-color: var(--primary-dark);
+    }
+
+    .slideshow-button:disabled {
+      background-color: var(--light-text);
+      cursor: not-allowed;
+    }
+
+    .slide-indicator {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+
+    .indicator-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background-color: var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .indicator-dot.active {
+      background-color: var(--primary);
+      transform: scale(1.2);
     }
 
     /* Markdown content styling - all text fully opaque */
@@ -263,12 +317,40 @@
         <div v-if="error" class="error-message">
           <p>{{ error }}</p>
         </div>
-        <div v-else-if="imageUrl" class="image-container">
-          <img :src="imageUrl" alt="Viewer image" class="image-display" @load="onImageLoad" @error="handleImageError">
+        <div v-else-if="images.length > 0" class="image-container">
+          <img :src="images[currentImageIndex].url" alt="Viewer image" class="image-display" @load="onImageLoad" @error="handleImageError">
         </div>
         <div v-else class="loading-message">
           <div class="loading-spinner"></div>
           <p>Loading image...</p>
+        </div>
+        
+        <!-- Slideshow Controls (only show if we have multiple images) -->
+        <div v-if="images.length > 1" class="slideshow-controls">
+          <button 
+            class="slideshow-button" 
+            @click="prevImage" 
+            :disabled="currentImageIndex === 0">
+            Previous
+          </button>
+          <div>{{ currentImageIndex + 1 }} / {{ images.length }}</div>
+          <button 
+            class="slideshow-button" 
+            @click="nextImage" 
+            :disabled="currentImageIndex === images.length - 1">
+            Next
+          </button>
+        </div>
+        
+        <!-- Indicator Dots -->
+        <div v-if="images.length > 1" class="slide-indicator">
+          <div 
+            v-for="(image, index) in images" 
+            :key="index"
+            class="indicator-dot"
+            :class="{ 'active': currentImageIndex === index }"
+            @click="goToImage(index)">
+          </div>
         </div>
       </div>
       
@@ -297,7 +379,8 @@
     new Vue({
       el: '#app',
       data: {
-        imageUrl: null,
+        images: [],
+        currentImageIndex: 0,
         markdownContent: '',
         error: null,
         isSidebarCollapsed: true, // Default expanded on large screens, collapsed on smaller screens
@@ -321,24 +404,50 @@
         handleImageError: function() {
           this.error = 'Failed to load image. Please check if the image file exists.';
         },
-        loadImage: function() {
+        loadImages: function() {
           const imgParam = getUrlParameter('img');
+          const countParam = getUrlParameter('count');
           
           if (!imgParam) {
             this.error = 'No image specified. Use ?img=IMAGE_FILE_NAME parameter.';
             return;
           }
           
-          // Set the image URL
-          this.imageUrl = `assets/${imgParam}.png`;
+          // Default count to 1 if not provided
+          const count = countParam ? parseInt(countParam) : 1;
           
-          // Load the corresponding markdown file (same name with .md extension)
-          const mdFileName = this.imageUrl.split('.').slice(0, -1).join('.') + '.md';
+          if (isNaN(count) || count < 1) {
+            this.error = 'Invalid count parameter. Must be a positive number.';
+            return;
+          }
           
-          fetch(mdFileName)
+          // Create array of image objects
+          this.images = [];
+          
+          // First image uses the base name
+          this.images.push({
+            url: `assets/${imgParam}.png`,
+            mdUrl: `assets/${imgParam}.md`
+          });
+          
+          // Additional images use the -2, -3, etc. suffix
+          for (let i = 2; i <= count; i++) {
+            this.images.push({
+              url: `assets/${imgParam}-${i}.png`,
+              mdUrl: `assets/${imgParam}-${i}.md`
+            });
+          }
+          
+          // Load the markdown for the first image
+          this.loadMarkdown(0);
+        },
+        loadMarkdown: function(index) {
+          if (!this.images[index]) return;
+          
+          fetch(this.images[index].mdUrl)
             .then(response => {
               if (!response.ok) {
-                throw new Error(`Failed to load markdown file: ${mdFileName}`);
+                throw new Error(`Failed to load markdown file: ${this.images[index].mdUrl}`);
               }
               return response.text();
             })
@@ -359,6 +468,24 @@
               this.error = null;
             });
         },
+        nextImage: function() {
+          if (this.currentImageIndex < this.images.length - 1) {
+            this.currentImageIndex++;
+            this.loadMarkdown(this.currentImageIndex);
+          }
+        },
+        prevImage: function() {
+          if (this.currentImageIndex > 0) {
+            this.currentImageIndex--;
+            this.loadMarkdown(this.currentImageIndex);
+          }
+        },
+        goToImage: function(index) {
+          if (index >= 0 && index < this.images.length) {
+            this.currentImageIndex = index;
+            this.loadMarkdown(this.currentImageIndex);
+          }
+        },
         handleResize: function() {
           // Auto-collapse sidebar on smaller screens, expand on larger screens
           // this.isSidebarCollapsed = window.innerWidth <= 768;
@@ -369,14 +496,24 @@
         }
       },
       mounted: function() {
-        this.loadImage();
+        this.loadImages();
         this.initSidebarState();
         // Add resize event listener
         window.addEventListener('resize', this.handleResize);
+        
+        // Add keyboard navigation
+        window.addEventListener('keydown', (e) => {
+          if (e.key === 'ArrowRight') {
+            this.nextImage();
+          } else if (e.key === 'ArrowLeft') {
+            this.prevImage();
+          }
+        });
       },
       beforeDestroy: function() {
-        // Remove event listener
+        // Remove event listeners
         window.removeEventListener('resize', this.handleResize);
+        window.removeEventListener('keydown', this.handleKeyDown);
       }
     });
   </script>

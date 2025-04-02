@@ -65,6 +65,18 @@
                   </div>
                 </div>
 
+                <!-- Models filter -->
+                <div class="mb-6">
+                  <label class="block text-sm font-medium text-gray-700 mb-2">Project Type</label>
+                  <div class="space-y-2 max-h-48 overflow-y-auto custom-scrollbar p-1">
+                    <div v-for="type in availableTypes" :key="type" class="flex items-center">
+                      <input type="checkbox" :id="type" :value="type" v-model="filters.selectedTypes"
+                        class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300 rounded">
+                      <label :for="model" class="ml-2 block text-sm text-gray-700">{{ type }}</label>
+                    </div>
+                  </div>
+                </div>
+
                 <!-- Date range filter -->
                 <div class="mb-6">
                   <label class="block text-sm font-medium text-gray-700 mb-2">Date Range</label>

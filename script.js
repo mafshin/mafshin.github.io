@@ -9,11 +9,13 @@ document.addEventListener('DOMContentLoaded', () => {
         filters: {
           search: '',
           selectedModels: [],
+          selectedTypes: [],
           dateRange: {
             from: '',
             to: ''
           }
-        }
+        },
+        availableTypes: ['Image', 'WebApp'], // Example types, adjust as needed
       };
     },
     computed: {
@@ -42,6 +44,10 @@ document.addEventListener('DOMContentLoaded', () => {
             (project.models && project.models.some(model => 
               this.filters.selectedModels.includes(model)
             ));
+
+          // Type filter
+          const typeMatch = this.filters.selectedTypes && (this.filters.selectedTypes.length === 0 || 
+            (project.type && this.filters.selectedTypes.includes(project.type)));
           
           // Date filter
           let dateMatch = true;
@@ -61,7 +67,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
           }
           
-          return searchMatch && modelsMatch && dateMatch;
+          return searchMatch && modelsMatch && dateMatch && typeMatch;
         });
       }
     },
@@ -111,9 +117,9 @@ document.addEventListener('DOMContentLoaded', () => {
           const minDate = new Date(Math.min(...dates));
           const maxDate = new Date(Math.max(...dates));
           
-          // We don't set these by default to not filter immediately
-          // this.filters.dateRange.from = minDate.toISOString().split('T')[0];
-          // this.filters.dateRange.to = maxDate.toISOString().split('T')[0];
+          //We don't set these by default to not filter immediately
+          this.filters.dateRange.from = minDate.toISOString().split('T')[0];
+          this.filters.dateRange.to = maxDate.toISOString().split('T')[0];
         }
       }
     }
