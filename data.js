@@ -23,6 +23,7 @@ const folderStructure = [
       { name: 'Wooden Leg - Metal Hand', path: "./ai-experiments/image-viewer/?img=wooden-leg-metal-hand", models: ["ChatGPT 4o"], date: "2025-04-01", type: "Image", image_name: "wooden-leg-metal-hand" },
       { name: 'Particle Generator with Mirrors', path: "./ai-experiments/particle-generator-with-mirrors", models: ["Gemini 2.5 Pro"], type: 'WebApp', date: "2025-04-02", },
       { name: 'Self Reflection in Mirrors', path: "./ai-experiments/image-viewer/?img=self-reflection-in-mirrors&count=2", models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-01", image_name: "self-reflection-in-mirrors" },
+      { name: 'Balance Selfie', path: "./ai-experiments/image-viewer/?img=balance-selfie", models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-02", image_name: "balance-selfie" },
     ]
   }
 ];
