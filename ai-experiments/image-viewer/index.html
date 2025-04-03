@@ -374,7 +374,7 @@
       <!-- Sidebar Panel (Overlay) -->
       <div class="sidebar" :class="{ 'collapsed': isSidebarCollapsed }">
         <div class="sidebar-header">
-          <h2 class="sidebar-title">{{ modelName }}</h2>
+          <h2 class="sidebar-title">{{ title }}</h2>
         </div>
         <div class="sidebar-content" v-html="parsedMarkdown"></div>
       </div>
@@ -397,7 +397,7 @@
         markdownContent: '',
         error: null,
         isSidebarCollapsed: true, // Default expanded on large screens, collapsed on smaller screens
-        modelName: 'Image Description',
+        title: 'Image Description',
         imageLoaded: true // Set to true by default to avoid loading state problems
       },
       computed: {
@@ -426,6 +426,7 @@
           }
 
           this.projectInfo = projects.find(p => p.image_name == imgParam);
+          this.title = this.projectInfo.name;
 
           const count = this.projectInfo.image_count ? this.projectInfo.image_count : 1;
 
@@ -453,7 +454,7 @@
 
         updateMetaTags: function (index) {
           const image = this.images[index];
-          const title = this.projectInfo ? this.projectInfo.name : `AI Generated Image with ${this.modelName}`;
+          const title = this.projectInfo ? this.projectInfo.name : `AI Generated Image with ${this.projectInfo.models[0]}`;
           const description = this.markdownContent.split('\n')[0]?.trim() || title;
           const imageUrl = `${window.location.origin}${window.location.pathname}${image.url}`;
 
@@ -486,14 +487,6 @@
             })
             .then(text => {
               this.markdownContent = text;
-
-              // Extract model name from the first line
-              const lines = text.split('\n');
-              if (lines.length > 0 && lines[0].trim()) {
-                this.modelName = lines[0].trim();
-                // Remove the first line from markdown content
-                this.markdownContent = lines.slice(1).join('\n').trim();
-              }
               this.updateMetaTags(index);
             })
             .catch(err => {
