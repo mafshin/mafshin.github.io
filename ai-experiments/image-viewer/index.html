@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AI Experiments Image Viewer</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.6.14/vue.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/marked/4.3.0/marked.min.js"></script>
+  <script src="../../data.js"></script>
   <style>
     :root {
       --primary: #2563eb;
@@ -57,7 +59,8 @@
       top: 0;
       left: 0;
       transition: var(--transition);
-      overflow: hidden; /* Prevent overflow */
+      overflow: hidden;
+      /* Prevent overflow */
       box-sizing: border-box;
     }
 
@@ -69,9 +72,12 @@
       width: 30%;
       max-width: 400px;
       height: 100%;
-      background-color: rgba(241, 245, 249, 0.5); /* Semi-transparent background */
-      backdrop-filter: blur(5px); /* Adds a blur effect to content behind */
-      -webkit-backdrop-filter: blur(5px); /* For Safari */
+      background-color: rgba(241, 245, 249, 0.5);
+      /* Semi-transparent background */
+      backdrop-filter: blur(5px);
+      /* Adds a blur effect to content behind */
+      -webkit-backdrop-filter: blur(5px);
+      /* For Safari */
       box-shadow: var(--shadow);
       z-index: 100;
       transition: var(--transition);
@@ -110,7 +116,8 @@
       justify-content: space-between;
       align-items: center;
       padding: 16px 20px;
-      background-color: var(--primary); /* Keep header fully opaque */
+      background-color: var(--primary);
+      /* Keep header fully opaque */
       color: white;
       border-bottom: 1px solid var(--primary-dark);
     }
@@ -129,8 +136,10 @@
       overflow-wrap: break-word;
       word-wrap: break-word;
       hyphens: auto;
-      color: var(--text); /* Ensuring text is fully opaque */
-      font-weight: 500; /* Making text slightly bolder for better readability */
+      color: var(--text);
+      /* Ensuring text is fully opaque */
+      font-weight: 500;
+      /* Making text slightly bolder for better readability */
     }
 
     .image-container {
@@ -148,7 +157,8 @@
 
     .image-display {
       max-width: 100%;
-      max-height: calc(80vh - 32px); /* Accounting for padding */
+      max-height: calc(80vh - 32px);
+      /* Accounting for padding */
       object-fit: contain;
       border-radius: 4px;
       display: block;
@@ -183,8 +193,13 @@
     }
 
     @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
+      0% {
+        transform: rotate(0deg);
+      }
+
+      100% {
+        transform: rotate(360deg);
+      }
     }
 
     /* Navigation controls for slideshow */
@@ -247,7 +262,8 @@
       margin-top: 1.5em;
       margin-bottom: 0.5em;
       opacity: 1;
-      text-shadow: 0 0 2px rgba(255, 255, 255, 0.5); /* Slight text shadow for better readability */
+      text-shadow: 0 0 2px rgba(255, 255, 255, 0.5);
+      /* Slight text shadow for better readability */
     }
 
     .sidebar-content p {
@@ -270,21 +286,25 @@
     }
 
     .sidebar-content code {
-      background-color: rgba(241, 245, 249, 0.7); /* Semi-transparent background */
+      background-color: rgba(241, 245, 249, 0.7);
+      /* Semi-transparent background */
       padding: 2px 4px;
       border-radius: 4px;
       font-family: monospace;
-      opacity: 1; /* Ensure text is fully opaque */
+      opacity: 1;
+      /* Ensure text is fully opaque */
     }
 
     .sidebar-content pre {
-      background-color: rgba(30, 41, 59, 0.7); /* Semi-transparent background */
+      background-color: rgba(30, 41, 59, 0.7);
+      /* Semi-transparent background */
       color: #f8fafc;
       padding: 12px;
       border-radius: 6px;
       overflow-x: auto;
       margin-bottom: 1em;
-      backdrop-filter: blur(3px); /* Additional blur for code blocks */
+      backdrop-filter: blur(3px);
+      /* Additional blur for code blocks */
     }
 
     /* Responsive styles */
@@ -292,7 +312,7 @@
       .sidebar {
         width: 300px;
       }
-      
+
       .toggle-button.sidebar-open {
         left: 280px;
       }
@@ -302,13 +322,14 @@
       .sidebar {
         width: 85%;
       }
-      
+
       .toggle-button.sidebar-open {
         left: calc(85% - 20px);
       }
     }
   </style>
 </head>
+
 <body>
   <div id="app">
     <div class="app-container">
@@ -318,47 +339,38 @@
           <p>{{ error }}</p>
         </div>
         <div v-else-if="images.length > 0" class="image-container">
-          <img :src="images[currentImageIndex].url" alt="Viewer image" class="image-display" @load="onImageLoad" @error="handleImageError">
+          <img :src="images[currentImageIndex].url" alt="Viewer image" class="image-display" @load="onImageLoad"
+            @error="handleImageError">
         </div>
         <div v-else class="loading-message">
           <div class="loading-spinner"></div>
           <p>Loading image...</p>
         </div>
-        
+
         <!-- Slideshow Controls (only show if we have multiple images) -->
         <div v-if="images.length > 1" class="slideshow-controls">
-          <button 
-            class="slideshow-button" 
-            @click="prevImage" 
-            :disabled="currentImageIndex === 0">
+          <button class="slideshow-button" @click="prevImage" :disabled="currentImageIndex === 0">
             Previous
           </button>
           <div>{{ currentImageIndex + 1 }} / {{ images.length }}</div>
-          <button 
-            class="slideshow-button" 
-            @click="nextImage" 
-            :disabled="currentImageIndex === images.length - 1">
+          <button class="slideshow-button" @click="nextImage" :disabled="currentImageIndex === images.length - 1">
             Next
           </button>
         </div>
-        
+
         <!-- Indicator Dots -->
         <div v-if="images.length > 1" class="slide-indicator">
-          <div 
-            v-for="(image, index) in images" 
-            :key="index"
-            class="indicator-dot"
-            :class="{ 'active': currentImageIndex === index }"
-            @click="goToImage(index)">
+          <div v-for="(image, index) in images" :key="index" class="indicator-dot"
+            :class="{ 'active': currentImageIndex === index }" @click="goToImage(index)">
           </div>
         </div>
       </div>
-      
+
       <!-- Toggle Button -->
       <button class="toggle-button" :class="{ 'sidebar-open': !isSidebarCollapsed }" @click="toggleSidebar">
         {{ isSidebarCollapsed ? 'Prompts' : '×' }}
       </button>
-      
+
       <!-- Sidebar Panel (Overlay) -->
       <div class="sidebar" :class="{ 'collapsed': isSidebarCollapsed }">
         <div class="sidebar-header">
@@ -380,6 +392,7 @@
       el: '#app',
       data: {
         images: [],
+        projectInfo: null,
         currentImageIndex: 0,
         markdownContent: '',
         error: null,
@@ -388,48 +401,43 @@
         imageLoaded: true // Set to true by default to avoid loading state problems
       },
       computed: {
-        parsedMarkdown: function() {
+        parsedMarkdown: function () {
           if (!this.markdownContent) return '';
           return marked.parse(this.markdownContent);
         }
       },
       methods: {
-        toggleSidebar: function() {
+        toggleSidebar: function () {
           this.isSidebarCollapsed = !this.isSidebarCollapsed;
         },
-        onImageLoad: function() {
+        onImageLoad: function () {
           this.imageLoaded = true;
           this.error = null;
         },
-        handleImageError: function() {
+        handleImageError: function () {
           this.error = 'Failed to load image. Please check if the image file exists.';
         },
-        loadImages: function() {
+        loadImages: function () {
           const imgParam = getUrlParameter('img');
-          const countParam = getUrlParameter('count');
-          
+
           if (!imgParam) {
             this.error = 'No image specified. Use ?img=IMAGE_FILE_NAME parameter.';
             return;
           }
-          
-          // Default count to 1 if not provided
-          const count = countParam ? parseInt(countParam) : 1;
-          
-          if (isNaN(count) || count < 1) {
-            this.error = 'Invalid count parameter. Must be a positive number.';
-            return;
-          }
-          
+
+          this.projectInfo = projects.find(p => p.image_name == imgParam);
+
+          const count = this.projectInfo.image_count ? this.projectInfo.image_count : 1;
+
           // Create array of image objects
           this.images = [];
-          
+
           // First image uses the base name
           this.images.push({
             url: `assets/${imgParam}.png`,
             mdUrl: `assets/${imgParam}.md`
           });
-          
+
           // Additional images use the -2, -3, etc. suffix
           for (let i = 2; i <= count; i++) {
             this.images.push({
@@ -437,13 +445,38 @@
               mdUrl: `assets/${imgParam}-${i}.md`
             });
           }
-          
+
           // Load the markdown for the first image
           this.loadMarkdown(0);
         },
-        loadMarkdown: function(index) {
+
+
+        updateMetaTags: function (index) {
+          const image = this.images[index];
+          const title = this.projectInfo ? this.projectInfo.name : `AI Generated Image with ${this.modelName}`;
+          const description = this.markdownContent.split('\n')[0]?.trim() || title;
+          const imageUrl = `${window.location.origin}${window.location.pathname}${image.url}`;
+
+          const setMeta = (property, content) => {
+            let tag = document.querySelector(`meta[property='${property}']`);
+            if (!tag) {
+              tag = document.createElement('meta');
+              tag.setAttribute('property', property);
+              document.head.appendChild(tag);
+            }
+            tag.setAttribute('content', content);
+          };
+
+          document.title = `${title} - AI Experiments`;
+          setMeta('og:title', title);
+          setMeta('og:description', description);
+          setMeta('og:image', imageUrl);
+          setMeta('og:url', window.location.href);
+          setMeta('og:type', 'website');
+        },
+        loadMarkdown: function (index) {
           if (!this.images[index]) return;
-          
+
           fetch(this.images[index].mdUrl)
             .then(response => {
               if (!response.ok) {
@@ -453,7 +486,7 @@
             })
             .then(text => {
               this.markdownContent = text;
-              
+
               // Extract model name from the first line
               const lines = text.split('\n');
               if (lines.length > 0 && lines[0].trim()) {
@@ -461,6 +494,7 @@
                 // Remove the first line from markdown content
                 this.markdownContent = lines.slice(1).join('\n').trim();
               }
+              this.updateMetaTags(index);
             })
             .catch(err => {
               console.error('Error loading markdown:', err);
@@ -468,39 +502,36 @@
               this.error = null;
             });
         },
-        nextImage: function() {
+        nextImage: function () {
           if (this.currentImageIndex < this.images.length - 1) {
             this.currentImageIndex++;
-            this.loadMarkdown(this.currentImageIndex);
           }
         },
-        prevImage: function() {
+        prevImage: function () {
           if (this.currentImageIndex > 0) {
             this.currentImageIndex--;
-            this.loadMarkdown(this.currentImageIndex);
           }
         },
-        goToImage: function(index) {
+        goToImage: function (index) {
           if (index >= 0 && index < this.images.length) {
             this.currentImageIndex = index;
-            this.loadMarkdown(this.currentImageIndex);
           }
         },
-        handleResize: function() {
+        handleResize: function () {
           // Auto-collapse sidebar on smaller screens, expand on larger screens
           // this.isSidebarCollapsed = window.innerWidth <= 768;
         },
-        initSidebarState: function() {
+        initSidebarState: function () {
           // Set initial sidebar state based on screen size
           // this.isSidebarCollapsed = window.innerWidth <= 768;
         }
       },
-      mounted: function() {
+      mounted: function () {
         this.loadImages();
         this.initSidebarState();
         // Add resize event listener
         window.addEventListener('resize', this.handleResize);
-        
+
         // Add keyboard navigation
         window.addEventListener('keydown', (e) => {
           if (e.key === 'ArrowRight') {
@@ -510,7 +541,7 @@
           }
         });
       },
-      beforeDestroy: function() {
+      beforeDestroy: function () {
         // Remove event listeners
         window.removeEventListener('resize', this.handleResize);
         window.removeEventListener('keydown', this.handleKeyDown);
@@ -518,4 +549,5 @@
     });
   </script>
 </body>
+
 </html>
