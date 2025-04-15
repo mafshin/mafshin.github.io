@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Story Player | Mohsen Afshin Experiments</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/3.3.4/vue.global.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <div class="wall-frame">
+            <div class="player-container">
+                <div class="slideshow-container" ref="slideshowContainer">
+                    <div 
+                        v-for="(image, index) in images" 
+                        :key="index"
+                        class="slide"
+                        :class="{ active: currentImageIndex === index }"
+                        :style="getSlideStyle(index)">
+                        <img :src="image.src" :alt="`Slide ${index + 1}`">
+                    </div>
+                </div>
+                
+                <div class="controls">
+                    <button @click="togglePlayPause">
+                        {{ isPlaying ? 'Pause' : 'Play' }}
+                    </button>
+                    <div class="progress-container" @click="seekToPosition">
+                        <div class="progress-bar" :style="{ width: progressPercentage + '%' }"></div>
+                    </div>
+                    <div class="volume-control">
+                        <input 
+                            type="range" 
+                            min="0" 
+                            max="1" 
+                            step="0.01" 
+                            v-model="volume" 
+                            @input="updateVolume">
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="wall-shadow"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
