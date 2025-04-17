@@ -27,7 +27,8 @@ const folderStructure = [
       { name: 'Creative Transformation Explosion', path: './ai-experiments/image-viewer/?img=creative-transformation-explosion', models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-03", image_name: "creative-transformation-explosion", image_count: 3 },
       { name: 'Rain Droplet Earth View', path: './ai-experiments/image-viewer/?img=rain-droplet-earth-view', models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-04", image_name: "rain-droplet-earth-view", image_count: 4 },
       { name: 'Mind Orchestra', path: './ai-experiments/image-viewer/?img=mind-orchestra', models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-07", image_name: "mind-orchestra"},
-      { name: 'Sabzak and Narang’s Magical Jungle Ride', path: './ai-experiments/visual-story', models: ["ChatGPT 4o"], type: "WebApp", date: "2025-04-15"}
+      { name: 'Sabzak and Narang’s Magical Jungle Ride', path: './ai-experiments/visual-story', models: ["ChatGPT 4o"], type: "WebApp", date: "2025-04-15"},
+      { name: 'Mona Lisa in Pablo Picasso Style', path: './ai-experiments/image-viewer/?img=mona-lisa-pablo-picasso', models: ["ChatGPT o4-mini-high"], type: 'Image', date: "2025-04-17", image_name: "mona-lisa-pablo-picasso"}
     ]
   }
 ];
