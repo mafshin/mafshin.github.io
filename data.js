@@ -29,7 +29,12 @@ const folderStructure = [
       { name: 'Mind Orchestra', path: './ai-experiments/image-viewer/?img=mind-orchestra', models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-07", image_name: "mind-orchestra"},
       { name: 'Sabzak and Narang’s Magical Jungle Ride', path: './ai-experiments/visual-story', models: ["ChatGPT 4o"], type: "WebApp", date: "2025-04-15"},
       { name: 'Mona Lisa in Pablo Picasso Style', path: './ai-experiments/image-viewer/?img=mona-lisa-pablo-picasso', models: ["ChatGPT o4-mini-high"], type: 'Image', date: "2025-04-17", image_name: "mona-lisa-pablo-picasso"},
-      { name: 'Futuristic Airplane Design', path: './ai-experiments/image-viewer/?img=airplane-design', models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-17", image_name: 'airplane-design', image_count: 2 }
+      { name: 'Futuristic Airplane Design', path: './ai-experiments/image-viewer/?img=airplane-design', models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-17", image_name: 'airplane-design', image_count: 2 },
+      { name: 'Astronaut on Moon Surface', path: './ai-experiments/image-viewer/?img=astronaut-moon-surface', models: ["ChatGPT 4o"], type: 'Image', date: "2025-04-24", image_name: 'astronaut-moon-surface'},
+      { name: 'Recursive Drawing', path: './ai-experiments/image-viewer/?img=recursive-drawing', models: ["ChatGPT 4o"], type: 'Image', date: '2025-04-24', image_name: 'recursive-drawing'},
+      { name: 'Arak 2045', path: './ai-experiments/image-viewer/?img=arak-2045-futuristic', models: ["ChatGPT 4o"], type: 'Image', date: '2025-04-24', image_name: 'arak-2045-futuristic'},
+      { name: 'Cookie Trees', path: './ai-experiments/image-viewer/?img=cookie-tree', models: ["ChatGPT 4o"], type: 'Image', date: '2025-04-20', image_name: 'cookie-tree', image_count: 3}
+      
     ]
   }
 ];
